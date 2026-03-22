@@ -67,7 +67,7 @@ export default function SettingsScreen() {
 
   const GlassSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
     <View style={styles.section}>
-      <Text style={[styles.sectionLabel, { color: 'rgba(74,255,114,0.7)' }]}>{title}</Text>
+      <Text style={styles.sectionLabel}>{title}</Text>
       <GlassCard>{children}</GlassCard>
     </View>
   );
@@ -223,8 +223,13 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14, marginTop: 4 },
   section: { paddingHorizontal: 16, marginBottom: 20 },
   sectionLabel: {
-    fontSize: 11, fontWeight: '700', textTransform: 'uppercase',
-    letterSpacing: 2, marginBottom: 10, paddingHorizontal: 4, opacity: 0.35,
+    fontSize: 11,
+    fontFamily: 'Outfit_600SemiBold',
+    textTransform: 'uppercase',
+    letterSpacing: 2.5,
+    marginBottom: 10,
+    paddingHorizontal: 4,
+    color: 'rgba(74,255,114,0.4)',
   },
   row: {
     flexDirection: 'row', alignItems: 'center', gap: 12,

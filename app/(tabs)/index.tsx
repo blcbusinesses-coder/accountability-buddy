@@ -1,7 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  RefreshControl, ActivityIndicator,
+  RefreshControl, ActivityIndicator, Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -21,7 +21,31 @@ import type { Database } from '../../lib/supabase';
 type Task = Database['public']['Tables']['tasks']['Row'];
 type FilterType = 'all' | 'pending' | 'completed' | 'failed';
 
-// Fetch ALL tasks (unfiltered) for battery/streak, apply UI filter separately
+/**
+ * Staggered fade+slide-up entrance for each task card.
+ * Delay is index * 55ms so cards cascade from top to bottom.
+ */
+function AnimatedCard({ index, children }: { index: number; children: React.ReactNode }) {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(18)).current;
+
+  useEffect(() => {
+    Animated.sequence([
+      Animated.delay(index * 55),
+      Animated.parallel([
+        Animated.timing(fadeAnim, { toValue: 1, duration: 280, useNativeDriver: true }),
+        Animated.timing(slideAnim, { toValue: 0, duration: 280, useNativeDriver: true }),
+      ]),
+    ]).start();
+  }, []);
+
+  return (
+    <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+      {children}
+    </Animated.View>
+  );
+}
+
 export default function TasksScreen() {
   const { user } = useAuth();
   const router = useRouter();
@@ -30,6 +54,19 @@ export default function TasksScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<FilterType>('all');
+
+  // Stats row entrance animation
+  const statsAnim = useRef(new Animated.Value(0)).current;
+  const statsSlide = useRef(new Animated.Value(-8)).current;
+
+  useEffect(() => {
+    if (!loading) {
+      Animated.parallel([
+        Animated.timing(statsAnim, { toValue: 1, duration: 350, useNativeDriver: true }),
+        Animated.timing(statsSlide, { toValue: 0, duration: 350, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [loading]);
 
   const fetchTasks = useCallback(async () => {
     if (!user) return;
@@ -71,6 +108,9 @@ export default function TasksScreen() {
   useFocusEffect(
     useCallback(() => {
       setLoading(true);
+      // Reset stats entrance animation each time screen focuses
+      statsAnim.setValue(0);
+      statsSlide.setValue(-8);
       fetchTasks();
     }, [fetchTasks])
   );
@@ -123,34 +163,47 @@ export default function TasksScreen() {
   return (
     <SceneBackground>
       <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top']}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Text style={[styles.title, { color: theme.textPrimary, fontFamily: 'DMSerifDisplay_400Regular', fontSize: 32 }]}>My Tasks</Text>
-            <StreakBadge tasks={allTasks} />
-          </View>
-          <View style={styles.headerRight}>
-            {allTasks.length > 0 && <ProductivityBattery tasks={allTasks} />}
-            <TouchableOpacity
-              style={[styles.addBtn, { backgroundColor: theme.primary, shadowColor: '#4AFF72', shadowOffset: { width: 0, height: 0 }, shadowRadius: 20, shadowOpacity: 0.5, elevation: 8 }]}
-              onPress={() => router.push('/task/create')}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="add" size={24} color="#000" />
-            </TouchableOpacity>
-          </View>
+
+        {/* ── Header Row 1: Title + Add button ── */}
+        <View style={styles.headerRow1}>
+          <Text style={[styles.title, { color: theme.textPrimary, fontFamily: 'DMSerifDisplay_400Regular' }]}>
+            My Tasks
+          </Text>
+          <TouchableOpacity
+            style={[styles.addBtn, {
+              backgroundColor: theme.primary,
+              shadowColor: '#4AFF72',
+              shadowOffset: { width: 0, height: 0 },
+              shadowRadius: 20,
+              shadowOpacity: 0.5,
+              elevation: 8,
+            }]}
+            onPress={() => router.push('/task/create')}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="add" size={24} color="#000" />
+          </TouchableOpacity>
         </View>
 
-        {/* Feature 7: Social Proof Drip */}
-        <SocialProofDrip />
+        {/* ── Header Row 2: Streak | Battery | Social Proof stat bar ── */}
+        <View style={styles.headerRow2}>
+          <StreakBadge tasks={allTasks} />
+          <View style={styles.headerRow2Center}>
+            {allTasks.length > 0 && <ProductivityBattery tasks={allTasks} />}
+          </View>
+          <SocialProofDrip compact />
+        </View>
 
-        {/* Stats */}
-        <View style={styles.statsRow}>
+        {/* Stats row — slides in after data loads */}
+        <Animated.View style={[
+          styles.statsRow,
+          { opacity: statsAnim, transform: [{ translateY: statsSlide }] },
+        ]}>
           <StatCard value={stats.total} label="Total" color={theme.textPrimary} />
           <StatCard value={stats.completed} label="Done" color={theme.success} tint="green" />
           <StatCard value={stats.pending} label="Pending" color={theme.primary} />
           <StatCard value={stats.failed} label="Failed" color={theme.error} tint="red" />
-        </View>
+        </Animated.View>
 
         {/* Filter pills */}
         <View style={styles.filterRow}>
@@ -168,12 +221,18 @@ export default function TasksScreen() {
           <FlatList
             data={filteredTasks}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <TaskCard task={item} onPress={() => router.push(`/task/${item.id}`)} />
+            renderItem={({ item, index }) => (
+              <AnimatedCard index={index}>
+                <TaskCard task={item} onPress={() => router.push(`/task/${item.id}`)} />
+              </AnimatedCard>
             )}
             contentContainerStyle={styles.listContent}
             refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchTasks(); }} tintColor={theme.primary} />
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={() => { setRefreshing(true); fetchTasks(); }}
+                tintColor={theme.primary}
+              />
             }
             ListEmptyComponent={
               <View style={styles.empty}>
@@ -183,7 +242,9 @@ export default function TasksScreen() {
                   color={theme.textMuted}
                   style={{ shadowColor: '#4AFF72', shadowRadius: 16, shadowOpacity: 0.4, shadowOffset: { width: 0, height: 0 } }}
                 />
-                <Text style={[styles.emptyTitle, { color: theme.textSecondary, fontFamily: 'Outfit_600SemiBold' }]}>No tasks yet</Text>
+                <Text style={[styles.emptyTitle, { color: theme.textSecondary, fontFamily: 'Outfit_600SemiBold' }]}>
+                  No tasks yet
+                </Text>
                 <Text style={[styles.emptyText, { color: theme.textMuted, fontFamily: 'Outfit_500Medium' }]}>
                   Tap + to create your first task
                 </Text>
@@ -199,28 +260,45 @@ export default function TasksScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 20, paddingTop: 12, paddingBottom: 10,
+
+  // Header Row 1
+  headerRow1: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 4,
   },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  title: { letterSpacing: -0.5 },
+  title: { fontSize: 32, letterSpacing: -0.5 },
   addBtn: {
     width: 44, height: 44, borderRadius: 13,
     justifyContent: 'center', alignItems: 'center',
   },
+
+  // Header Row 2 — stat bar
+  headerRow2: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 14,
+    gap: 10,
+  },
+  headerRow2Center: {
+    flex: 1,
+    alignItems: 'center',
+  },
+
   statsRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingBottom: 12 },
   statCardGlass: { flex: 1 },
   statCardInner: { padding: 12, alignItems: 'center' },
   statNum: { fontSize: 20, letterSpacing: -0.5 },
   statLabel: { fontSize: 10, marginTop: 2 },
+
   filterRow: { flexDirection: 'row', paddingHorizontal: 16, paddingBottom: 10, gap: 8 },
-  pill: {
-    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 50,
-    borderWidth: 1,
-  },
+  pill: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 50, borderWidth: 1 },
   pillText: { fontSize: 13 },
+
   listContent: { paddingTop: 4, paddingBottom: 140 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 8 },

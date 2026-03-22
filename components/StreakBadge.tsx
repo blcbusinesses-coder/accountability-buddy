@@ -1,6 +1,6 @@
 /**
  * Feature 2 — Streak Mechanic (enhanced)
- * Flame pill with flicker animation, milestone pulse rings, toast on milestone.
+ * Flame pill with flicker animation, idle amber glow pulse, milestone pulse rings, toast on milestone.
  */
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
@@ -43,6 +43,8 @@ export default function StreakBadge({ tasks }: Props) {
   const flickerAnim = useRef(new Animated.Value(1)).current;
   const ringScale = useRef(new Animated.Value(0.8)).current;
   const ringOpacity = useRef(new Animated.Value(0)).current;
+  // Idle amber background pulse (useNativeDriver: false for color interpolation)
+  const idlePulse = useRef(new Animated.Value(0)).current;
   const [showToast, setShowToast] = useState(false);
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const toastY = useRef(new Animated.Value(10)).current;
@@ -63,14 +65,26 @@ export default function StreakBadge({ tasks }: Props) {
     return () => flicker.stop();
   }, []);
 
+  // Idle amber background pulse — slow 2.2s per phase
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(idlePulse, { toValue: 1, duration: 2200, useNativeDriver: false }),
+        Animated.timing(idlePulse, { toValue: 0, duration: 2200, useNativeDriver: false }),
+      ])
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, []);
+
   // Milestone detection
   useEffect(() => {
     if (prevStreak.current === -1) {
       prevStreak.current = streak;
       return;
     }
-    const isMilestone = MILESTONES.includes(streak) && streak > prevStreak.current;
-    if (isMilestone) {
+    const isMilestoneHit = MILESTONES.includes(streak) && streak > prevStreak.current;
+    if (isMilestoneHit) {
       ringScale.setValue(0.8);
       ringOpacity.setValue(0.9);
       Animated.parallel([
@@ -97,6 +111,20 @@ export default function StreakBadge({ tasks }: Props) {
 
   const isMilestone = MILESTONES.includes(streak);
 
+  const animatedBg = idlePulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: isMilestone
+      ? ['rgba(255,214,10,0.20)', 'rgba(255,214,10,0.40)']
+      : ['rgba(255,214,10,0.09)', 'rgba(255,214,10,0.24)'],
+  });
+
+  const animatedBorder = idlePulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: isMilestone
+      ? ['rgba(255,214,10,0.35)', 'rgba(255,214,10,0.65)']
+      : ['rgba(255,214,10,0.14)', 'rgba(255,214,10,0.38)'],
+  });
+
   return (
     <View style={styles.container}>
       {showToast && (
@@ -109,12 +137,17 @@ export default function StreakBadge({ tasks }: Props) {
         <Animated.View
           style={[styles.milestoneRing, { opacity: ringOpacity, transform: [{ scale: ringScale }] }]}
         />
-        <View style={[styles.badge, isMilestone && styles.milestoneBadge]}>
+        <Animated.View
+          style={[
+            styles.badge,
+            { backgroundColor: animatedBg, borderColor: animatedBorder },
+          ]}
+        >
           <Animated.Text style={[styles.fire, { transform: [{ scale: flickerAnim }] }]}>
             🔥
           </Animated.Text>
           <Text style={[styles.text, isMilestone && styles.milestoneText]}>{streak}d</Text>
-        </View>
+        </Animated.View>
       </View>
     </View>
   );
@@ -134,17 +167,11 @@ const styles = StyleSheet.create({
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,214,10,0.12)',
-    borderColor: 'rgba(255,214,10,0.2)',
     borderWidth: 1,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 20,
     gap: 3,
-  },
-  milestoneBadge: {
-    backgroundColor: 'rgba(255,214,10,0.22)',
-    borderColor: 'rgba(255,214,10,0.45)',
   },
   fire: { fontSize: 13 },
   text: { fontSize: 13, fontWeight: '700', color: '#FFD60A' },

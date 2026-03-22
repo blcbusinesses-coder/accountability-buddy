@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Ionicons } from '@expo/vector-icons';
@@ -46,6 +46,18 @@ export default function ProfileScreen() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
 
+  // Avatar glow pulse animation (useNativeDriver: false for shadowOpacity)
+  const avatarGlow = useRef(new Animated.Value(0.45)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(avatarGlow, { toValue: 0.85, duration: 2000, useNativeDriver: false }),
+        Animated.timing(avatarGlow, { toValue: 0.3, duration: 2000, useNativeDriver: false }),
+      ])
+    ).start();
+  }, []);
+
   useFocusEffect(useCallback(() => {
     if (!user) return;
     Promise.all([
@@ -90,15 +102,30 @@ export default function ProfileScreen() {
           <View style={styles.section}>
             <GlassCard>
               <View style={styles.avatarWrap}>
-                <View style={[styles.avatar, {
-                  backgroundColor: '#4AFF72',
-                  borderColor: theme.primary,
-                  shadowColor: '#4AFF72',
-                  shadowOffset: { width: 0, height: 0 },
-                  shadowRadius: 24,
-                  shadowOpacity: 0.45,
-                }]}>
-                  <Text style={[styles.avatarText, { color: '#060d0a' }]}>{initials}</Text>
+                {/* Pulsing glow halo behind avatar */}
+                <View style={styles.avatarGlowWrap}>
+                  <Animated.View
+                    style={[
+                      styles.avatarHalo,
+                      { opacity: avatarGlow },
+                    ]}
+                  />
+                  <Animated.View
+                    style={[
+                      styles.avatar,
+                      {
+                        backgroundColor: '#4AFF72',
+                        borderColor: theme.primary,
+                        shadowColor: '#4AFF72',
+                        shadowOffset: { width: 0, height: 0 },
+                        shadowRadius: 28,
+                        shadowOpacity: avatarGlow,
+                        elevation: 12,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.avatarText, { color: '#060d0a' }]}>{initials}</Text>
+                  </Animated.View>
                 </View>
                 <Text style={[styles.email, { color: theme.textPrimary, fontFamily: 'Outfit_600SemiBold' }]}>{email}</Text>
                 <Text style={[styles.memberSince, { color: theme.textSecondary, fontFamily: 'Outfit_400Regular' }]}>Member since {memberSince}</Text>
@@ -108,7 +135,7 @@ export default function ProfileScreen() {
 
           {/* Feature 9: Weekly Recap link */}
           <View style={styles.section}>
-            <Text style={[styles.sectionLabel, { color: theme.textMuted, fontFamily: 'Outfit_600SemiBold' }]}>Highlights</Text>
+            <Text style={styles.sectionLabel}>Highlights</Text>
             <GlassCard>
               <TouchableOpacity
                 style={[styles.statRow, { borderTopWidth: 0 }]}
@@ -124,7 +151,7 @@ export default function ProfileScreen() {
 
           {/* Stats insights */}
           <View style={styles.section}>
-            <Text style={[styles.sectionLabel, { color: theme.textMuted, fontFamily: 'Outfit_600SemiBold' }]}>Your Stats</Text>
+            <Text style={styles.sectionLabel}>Your Stats</Text>
             <GlassCard>
               {lifetimeRate !== null && (
                 <StatRow icon="trophy-outline" label="Lifetime success rate" value={`${lifetimeRate}%`} color={lifetimeRate >= 70 ? theme.success : lifetimeRate >= 40 ? theme.warning : theme.error} />
@@ -156,15 +183,34 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 },
   title: { fontSize: 32, letterSpacing: -0.5 },
   section: { paddingHorizontal: 16, marginBottom: 20 },
+  // Quieter green section labels: rgba(74,255,114,0.4), letterSpacing 2.5
   sectionLabel: {
-    fontSize: 11, textTransform: 'uppercase',
-    letterSpacing: 2, marginBottom: 10, paddingHorizontal: 4,
+    fontSize: 11,
+    fontFamily: 'Outfit_600SemiBold',
+    textTransform: 'uppercase',
+    letterSpacing: 2.5,
+    marginBottom: 10,
+    paddingHorizontal: 4,
+    color: 'rgba(74,255,114,0.4)',
+  },
+  // Avatar glow setup
+  avatarGlowWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  avatarHalo: {
+    position: 'absolute',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(74,255,114,0.18)',
   },
   avatarWrap: { alignItems: 'center', paddingVertical: 28, paddingHorizontal: 20 },
   avatar: {
     width: 76, height: 76, borderRadius: 38,
     justifyContent: 'center', alignItems: 'center',
-    borderWidth: 2, marginBottom: 14,
+    borderWidth: 2,
   },
   avatarText: { fontSize: 30, fontWeight: '700' },
   email: { fontSize: 17, marginBottom: 4 },

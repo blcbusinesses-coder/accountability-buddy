@@ -1,6 +1,6 @@
 /**
- * Feature 8 — Productivity Battery (redesigned)
- * Vertical 5-bar battery with staggered fill animation.
+ * Feature 8 — Productivity Battery (redesigned: horizontal compact pill)
+ * Horizontal 5-segment bar with staggered left-to-right fill animation.
  * Tap to expand glass popover with exact % and 7-day bar chart.
  */
 import { useEffect, useRef, useState } from 'react';
@@ -22,10 +22,8 @@ function computeBatteryBars(tasks: Task[]): { bars: number; pct: number } {
   sevenDaysAgo.setDate(now.getDate() - 7);
 
   const recent = tasks.filter((t) => new Date(t.updated_at) >= sevenDaysAgo);
-
   if (recent.length === 0) return { bars: 0, pct: 0 };
 
-  // Weighted: recent 3 days get 1.3x multiplier
   const threeDaysAgo = new Date(now);
   threeDaysAgo.setDate(now.getDate() - 3);
 
@@ -75,7 +73,7 @@ export default function ProductivityBattery({ tasks }: Props) {
   const [popoverVisible, setPopoverVisible] = useState(false);
   const sevenDayData = get7DayData(tasks);
 
-  // Animated values for each bar (staggered bottom-up fill)
+  // Animated values for each bar (staggered left-to-right fill)
   const barAnims = useRef(
     Array.from({ length: 5 }, () => new Animated.Value(0))
   ).current;
@@ -84,22 +82,20 @@ export default function ProductivityBattery({ tasks }: Props) {
   const lowPulse = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    // Staggered fill animation: bottom bar (index 4) fills first
+    // Fill left to right: bar 0 fills first
     const anims = barAnims.map((anim, i) => {
-      const barIndex = 4 - i; // reverse: fill from bottom up
-      const shouldFill = barIndex < bars;
+      const shouldFill = i < bars;
       return Animated.sequence([
-        Animated.delay(barIndex * 60),
+        Animated.delay(i * 70),
         Animated.timing(anim, {
           toValue: shouldFill ? 1 : 0,
-          duration: 120,
+          duration: 140,
           useNativeDriver: false,
         }),
       ]);
     });
     Animated.parallel(anims).start();
 
-    // Low battery pulse if 0 bars
     if (bars === 0) {
       Animated.loop(
         Animated.sequence([
@@ -119,33 +115,29 @@ export default function ProductivityBattery({ tasks }: Props) {
         activeOpacity={0.75}
         style={styles.wrapper}
       >
+        {/* Horizontal battery */}
         <View style={styles.batteryContainer}>
-          {/* Battery nub */}
-          <View style={[styles.batteryNub, { backgroundColor: theme.borderStrong }]} />
           {/* Battery body */}
           <View style={[styles.batteryBody, { borderColor: theme.borderStrong }]}>
-            {/* 5 bars, rendered top to bottom (bar 0 = top = bar 5 visual) */}
-            {Array.from({ length: 5 }, (_, i) => {
-              const barSlot = 4 - i; // 4=top, 0=bottom
-              const shouldBeFilled = barSlot < bars;
-              return (
-                <Animated.View
-                  key={i}
-                  style={[
-                    styles.bar,
-                    {
-                      backgroundColor: barAnims[barSlot].interpolate({
-                        inputRange: [0, 1],
-                        outputRange: ['rgba(255,255,255,0.06)', barColor],
-                      }),
-                      opacity: bars === 0 ? lowPulse : 1,
-                    },
-                    i < 4 && styles.barGap,
-                  ]}
-                />
-              );
-            })}
+            {Array.from({ length: 5 }, (_, i) => (
+              <Animated.View
+                key={i}
+                style={[
+                  styles.bar,
+                  i < 4 && styles.barGap,
+                  {
+                    backgroundColor: barAnims[i].interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['rgba(255,255,255,0.07)', barColor],
+                    }),
+                    opacity: bars === 0 ? lowPulse : 1,
+                  },
+                ]}
+              />
+            ))}
           </View>
+          {/* Battery nub on the right */}
+          <View style={[styles.batteryNub, { backgroundColor: theme.borderStrong }]} />
         </View>
       </TouchableOpacity>
 
@@ -162,11 +154,11 @@ export default function ProductivityBattery({ tasks }: Props) {
           onPress={() => setPopoverVisible(false)}
         >
           <View style={[styles.popover, { backgroundColor: theme.surfaceStrong, borderColor: theme.borderStrong }]}>
-            <Text style={[styles.popTitle, { color: theme.textPrimary }]}>Productivity Battery</Text>
+            <Text style={[styles.popTitle, { color: theme.textPrimary, fontFamily: 'Outfit_700Bold' }]}>Productivity Battery</Text>
 
             <View style={styles.pctRow}>
-              <Text style={[styles.pctBig, { color: barColor }]}>{pct}%</Text>
-              <Text style={[styles.pctLabel, { color: theme.textSecondary }]}>
+              <Text style={[styles.pctBig, { color: barColor, fontFamily: 'Outfit_700Bold' }]}>{pct}%</Text>
+              <Text style={[styles.pctLabel, { color: theme.textSecondary, fontFamily: 'Outfit_500Medium' }]}>
                 last 7 days
               </Text>
             </View>
@@ -188,7 +180,7 @@ export default function ProductivityBattery({ tasks }: Props) {
                         ]}
                       />
                     </View>
-                    <Text style={[styles.chartDay, { color: theme.textMuted }]}>{d.day}</Text>
+                    <Text style={[styles.chartDay, { color: theme.textMuted, fontFamily: 'Outfit_600SemiBold' }]}>{d.day}</Text>
                   </View>
                 );
               })}
@@ -198,7 +190,7 @@ export default function ProductivityBattery({ tasks }: Props) {
               style={[styles.closePopover, { backgroundColor: theme.surfaceElevated }]}
               onPress={() => setPopoverVisible(false)}
             >
-              <Text style={[styles.closePopoverText, { color: theme.textSecondary }]}>Close</Text>
+              <Text style={[styles.closePopoverText, { color: theme.textSecondary, fontFamily: 'Outfit_600SemiBold' }]}>Close</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -211,32 +203,33 @@ const styles = StyleSheet.create({
   wrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 4,
   },
   batteryContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  batteryNub: {
-    width: 16,
-    height: 5,
-    borderRadius: 2,
-    marginBottom: 2,
-  },
   batteryBody: {
-    width: 44,
-    height: 80,
-    borderRadius: 8,
-    borderWidth: 2,
-    padding: 4,
+    width: 64,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    padding: 3,
+    flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 3,
+    gap: 2,
+  },
+  batteryNub: {
+    width: 4,
+    height: 10,
+    borderRadius: 1.5,
+    marginLeft: 2,
   },
   bar: {
     flex: 1,
-    borderRadius: 3,
+    borderRadius: 2,
   },
   barGap: {
-    marginBottom: 0,
+    // gap is handled by parent's gap property
   },
   modalOverlay: {
     flex: 1,
@@ -254,7 +247,6 @@ const styles = StyleSheet.create({
   },
   popTitle: {
     fontSize: 16,
-    fontWeight: '700',
     letterSpacing: -0.3,
   },
   pctRow: {
@@ -264,12 +256,10 @@ const styles = StyleSheet.create({
   },
   pctBig: {
     fontSize: 40,
-    fontWeight: '800',
     letterSpacing: -1,
   },
   pctLabel: {
     fontSize: 13,
-    fontWeight: '500',
   },
   chart: {
     flexDirection: 'row',
@@ -295,7 +285,6 @@ const styles = StyleSheet.create({
   },
   chartDay: {
     fontSize: 10,
-    fontWeight: '600',
   },
   closePopover: {
     borderRadius: 10,
@@ -304,6 +293,5 @@ const styles = StyleSheet.create({
   },
   closePopoverText: {
     fontSize: 14,
-    fontWeight: '600',
   },
 });
