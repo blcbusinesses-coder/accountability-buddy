@@ -13,7 +13,6 @@ import { useTheme } from '../../context/ThemeContext';
 import TaskCard from '../../components/TaskCard';
 import ProductivityBattery from '../../components/ProductivityBattery';
 import StreakBadge from '../../components/StreakBadge';
-import SocialProofDrip from '../../components/SocialProofDrip';
 import SceneBackground from '../../components/SceneBackground';
 import GlassCard from '../../components/GlassCard';
 import type { Database } from '../../lib/supabase';
@@ -160,17 +159,14 @@ export default function TasksScreen() {
     <SceneBackground>
       <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top']}>
 
-        {/* ── Top bar: Streak pill + Social Proof pill, centered ── */}
-        <View style={styles.topBar}>
-          <StreakBadge tasks={allTasks} />
-          <SocialProofDrip compact />
-        </View>
-
-        {/* ── Header: Title + Battery + Add button ── */}
+        {/* ── Header: Title + Streak, then Battery + Add button ── */}
         <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.textPrimary, fontFamily: 'DMSerifDisplay_400Regular' }]}>
-            My Tasks
-          </Text>
+          <View style={styles.headerLeft}>
+            <Text style={[styles.title, { color: theme.textPrimary, fontFamily: 'DMSerifDisplay_400Regular' }]}>
+              My Tasks
+            </Text>
+            <StreakBadge tasks={allTasks} />
+          </View>
           <View style={styles.headerActions}>
             {allTasks.length > 0 && <ProductivityBattery tasks={allTasks} />}
             <TouchableOpacity
@@ -257,24 +253,20 @@ export default function TasksScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
 
-  // ── Top bar: streak + social proof, centered above everything ──
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 6,
-    paddingBottom: 10,
-    gap: 8,
-  },
-
-  // ── Header: title left, battery + add right ──
+  // ── Header: title+streak left, battery+add right ──
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
+    paddingTop: 10,
     paddingBottom: 14,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
   },
   title: { fontSize: 32, letterSpacing: -0.5 },
   headerActions: {

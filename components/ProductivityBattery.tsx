@@ -151,7 +151,7 @@ export default function ProductivityBattery({ tasks }: Props) {
           activeOpacity={1}
           onPress={() => setPopoverVisible(false)}
         >
-          <View style={[styles.popover, { backgroundColor: theme.surfaceStrong, borderColor: theme.borderStrong }]}>
+          <View style={[styles.popover, { backgroundColor: '#000000', borderColor: 'rgba(255,255,255,0.12)' }]}>
             <Text style={[styles.popTitle, { color: theme.textPrimary, fontFamily: 'Outfit_700Bold' }]}>
               Productivity Battery
             </Text>
@@ -172,7 +172,7 @@ export default function ProductivityBattery({ tasks }: Props) {
                       <View
                         style={[
                           styles.chartBar,
-                          { height: barH, backgroundColor: d.completed > 0 ? barColor : theme.surfaceElevated },
+                          { height: barH, backgroundColor: d.completed > 0 ? barColor : 'rgba(255,255,255,0.10)' },
                         ]}
                       />
                     </View>
@@ -185,10 +185,10 @@ export default function ProductivityBattery({ tasks }: Props) {
             </View>
 
             <TouchableOpacity
-              style={[styles.closePopover, { backgroundColor: theme.surfaceElevated }]}
+              style={[styles.closePopover, { backgroundColor: 'rgba(255,255,255,0.08)' }]}
               onPress={() => setPopoverVisible(false)}
             >
-              <Text style={[styles.closePopoverText, { color: theme.textSecondary, fontFamily: 'Outfit_600SemiBold' }]}>
+              <Text style={[styles.closePopoverText, { color: 'rgba(255,255,255,0.5)', fontFamily: 'Outfit_600SemiBold' }]}>
                 Close
               </Text>
             </TouchableOpacity>

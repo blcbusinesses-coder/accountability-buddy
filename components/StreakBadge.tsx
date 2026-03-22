@@ -1,9 +1,10 @@
 /**
  * Feature 2 — Streak Mechanic (enhanced)
- * Flame pill with flicker animation, idle amber glow pulse, milestone pulse rings, toast on milestone.
+ * Green flame pill with flicker animation, idle green glow pulse, milestone rings, toast.
  */
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import type { Database } from '../lib/supabase';
 
 type Task = Database['public']['Tables']['tasks']['Row'];
@@ -43,7 +44,7 @@ export default function StreakBadge({ tasks }: Props) {
   const flickerAnim = useRef(new Animated.Value(1)).current;
   const ringScale = useRef(new Animated.Value(0.8)).current;
   const ringOpacity = useRef(new Animated.Value(0)).current;
-  // Idle amber background pulse (useNativeDriver: false for color interpolation)
+  // Idle green background pulse
   const idlePulse = useRef(new Animated.Value(0)).current;
   const [showToast, setShowToast] = useState(false);
   const toastOpacity = useRef(new Animated.Value(0)).current;
@@ -54,9 +55,9 @@ export default function StreakBadge({ tasks }: Props) {
   useEffect(() => {
     const flicker = Animated.loop(
       Animated.sequence([
-        Animated.timing(flickerAnim, { toValue: 1.18, duration: 550, useNativeDriver: true }),
-        Animated.timing(flickerAnim, { toValue: 0.94, duration: 380, useNativeDriver: true }),
-        Animated.timing(flickerAnim, { toValue: 1.1, duration: 480, useNativeDriver: true }),
+        Animated.timing(flickerAnim, { toValue: 1.2, duration: 550, useNativeDriver: true }),
+        Animated.timing(flickerAnim, { toValue: 0.92, duration: 380, useNativeDriver: true }),
+        Animated.timing(flickerAnim, { toValue: 1.12, duration: 480, useNativeDriver: true }),
         Animated.timing(flickerAnim, { toValue: 1, duration: 280, useNativeDriver: true }),
         Animated.delay(1600),
       ])
@@ -65,7 +66,7 @@ export default function StreakBadge({ tasks }: Props) {
     return () => flicker.stop();
   }, []);
 
-  // Idle amber background pulse — slow 2.2s per phase
+  // Idle green glow pulse — slow 2.2s per phase
   useEffect(() => {
     const pulse = Animated.loop(
       Animated.sequence([
@@ -114,15 +115,15 @@ export default function StreakBadge({ tasks }: Props) {
   const animatedBg = idlePulse.interpolate({
     inputRange: [0, 1],
     outputRange: isMilestone
-      ? ['rgba(255,214,10,0.20)', 'rgba(255,214,10,0.40)']
-      : ['rgba(255,214,10,0.09)', 'rgba(255,214,10,0.24)'],
+      ? ['rgba(74,255,114,0.14)', 'rgba(74,255,114,0.30)']
+      : ['rgba(74,255,114,0.07)', 'rgba(74,255,114,0.18)'],
   });
 
   const animatedBorder = idlePulse.interpolate({
     inputRange: [0, 1],
     outputRange: isMilestone
-      ? ['rgba(255,214,10,0.35)', 'rgba(255,214,10,0.65)']
-      : ['rgba(255,214,10,0.14)', 'rgba(255,214,10,0.38)'],
+      ? ['rgba(74,255,114,0.30)', 'rgba(74,255,114,0.60)']
+      : ['rgba(74,255,114,0.12)', 'rgba(74,255,114,0.32)'],
   });
 
   return (
@@ -134,18 +135,17 @@ export default function StreakBadge({ tasks }: Props) {
       )}
 
       <View style={styles.badgeWrap}>
+        {/* Milestone ring pulse */}
         <Animated.View
           style={[styles.milestoneRing, { opacity: ringOpacity, transform: [{ scale: ringScale }] }]}
         />
         <Animated.View
-          style={[
-            styles.badge,
-            { backgroundColor: animatedBg, borderColor: animatedBorder },
-          ]}
+          style={[styles.badge, { backgroundColor: animatedBg, borderColor: animatedBorder }]}
         >
-          <Animated.Text style={[styles.fire, { transform: [{ scale: flickerAnim }] }]}>
-            🔥
-          </Animated.Text>
+          {/* Green flame icon with flicker */}
+          <Animated.View style={{ transform: [{ scale: flickerAnim }] }}>
+            <Ionicons name="flame" size={14} color="#4AFF72" />
+          </Animated.View>
           <Text style={[styles.text, isMilestone && styles.milestoneText]}>{streak}d</Text>
         </Animated.View>
       </View>
@@ -162,31 +162,38 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     borderWidth: 2,
-    borderColor: '#FFD60A',
+    borderColor: '#4AFF72',
   },
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    paddingHorizontal: 10,
+    paddingHorizontal: 9,
     paddingVertical: 5,
     borderRadius: 20,
-    gap: 3,
+    gap: 4,
   },
-  fire: { fontSize: 13 },
-  text: { fontSize: 13, fontWeight: '700', color: '#FFD60A' },
-  milestoneText: { fontSize: 14, color: '#FFD60A' },
+  text: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#4AFF72',
+    fontFamily: 'Outfit_700Bold',
+  },
+  milestoneText: {
+    fontSize: 14,
+    color: '#4AFF72',
+  },
   toast: {
     position: 'absolute',
     top: -36,
     left: 0,
-    backgroundColor: 'rgba(255,214,10,0.15)',
+    backgroundColor: 'rgba(74,255,114,0.12)',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,214,10,0.3)',
+    borderColor: 'rgba(74,255,114,0.25)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     zIndex: 100,
   },
-  toastText: { color: '#FFD60A', fontSize: 12, fontWeight: '700' },
+  toastText: { color: '#4AFF72', fontSize: 12, fontWeight: '700' },
 });
