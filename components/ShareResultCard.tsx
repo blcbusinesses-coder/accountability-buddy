@@ -16,7 +16,7 @@ import { captureRef } from 'react-native-view-shot';
 
 const { width, height } = Dimensions.get('window');
 const CARD_W = width - 48;
-const ROBOT = require('../assets/icon.png');
+const ROBOT = require('../assets/icon-transparent.png');
 
 // ── Swirling arc ring ─────────────────────────────────────────────────────────
 function SwirlRing({

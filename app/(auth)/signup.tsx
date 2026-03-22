@@ -45,7 +45,7 @@ export default function SignupScreen() {
       <SceneBackground>
         <View style={styles.successWrap}>
           <Image
-            source={require('../../assets/icon.png')}
+            source={require('../../assets/icon-transparent.png')}
             style={styles.successRobot}
           />
           <Text style={[styles.successTitle, { color: theme.textPrimary, fontFamily: 'DMSerifDisplay_400Regular' }]}>You're in!</Text>
@@ -78,7 +78,7 @@ export default function SignupScreen() {
         >
           <View style={styles.logoWrap}>
             <Image
-              source={require('../../assets/icon.png')}
+              source={require('../../assets/icon-transparent.png')}
               style={styles.logoImg}
             />
             <Text style={[styles.appName, { color: theme.textPrimary, fontFamily: 'DMSerifDisplay_400Regular', fontSize: 28 }]}>Accountability Buddy</Text>

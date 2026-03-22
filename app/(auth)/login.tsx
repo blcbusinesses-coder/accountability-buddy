@@ -40,7 +40,7 @@ export default function LoginScreen() {
           {/* Logo */}
           <View style={styles.logoWrap}>
             <Image
-              source={require('../../assets/icon.png')}
+              source={require('../../assets/icon-transparent.png')}
               style={styles.logoImg}
             />
             <Text style={[styles.appName, { color: theme.textPrimary, fontFamily: 'DMSerifDisplay_400Regular', fontSize: 28 }]}>Accountability Buddy</Text>

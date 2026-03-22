@@ -15,6 +15,7 @@ import ProductivityBattery from '../../components/ProductivityBattery';
 import StreakBadge from '../../components/StreakBadge';
 import SceneBackground from '../../components/SceneBackground';
 import GlassCard from '../../components/GlassCard';
+import SwirlRings from '../../components/SwirlRings';
 import type { Database } from '../../lib/supabase';
 
 type Task = Database['public']['Tables']['tasks']['Row'];
@@ -157,6 +158,8 @@ export default function TasksScreen() {
 
   return (
     <SceneBackground>
+      {/* Swirling arc rings behind everything */}
+      <SwirlRings intensity={0.75} />
       <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top']}>
 
         {/* ── Header: Title + Streak, then Battery + Add button ── */}
@@ -229,7 +232,7 @@ export default function TasksScreen() {
             ListEmptyComponent={
               <View style={styles.empty}>
                 <Image
-                  source={require('../../assets/icon.png')}
+                  source={require('../../assets/icon-transparent.png')}
                   style={styles.emptyRobot}
                 />
                 <Text style={[styles.emptyTitle, { color: theme.textSecondary, fontFamily: 'Outfit_600SemiBold' }]}>
