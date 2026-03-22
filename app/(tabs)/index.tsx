@@ -21,10 +21,7 @@ import type { Database } from '../../lib/supabase';
 type Task = Database['public']['Tables']['tasks']['Row'];
 type FilterType = 'all' | 'pending' | 'completed' | 'failed';
 
-/**
- * Staggered fade+slide-up entrance for each task card.
- * Delay is index * 55ms so cards cascade from top to bottom.
- */
+/** Staggered fade+slide-up entrance per task card. */
 function AnimatedCard({ index, children }: { index: number; children: React.ReactNode }) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(18)).current;
@@ -108,7 +105,6 @@ export default function TasksScreen() {
   useFocusEffect(
     useCallback(() => {
       setLoading(true);
-      // Reset stats entrance animation each time screen focuses
       statsAnim.setValue(0);
       statsSlide.setValue(-8);
       fetchTasks();
@@ -164,37 +160,37 @@ export default function TasksScreen() {
     <SceneBackground>
       <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top']}>
 
-        {/* ── Header Row 1: Title + Add button ── */}
-        <View style={styles.headerRow1}>
-          <Text style={[styles.title, { color: theme.textPrimary, fontFamily: 'DMSerifDisplay_400Regular' }]}>
-            My Tasks
-          </Text>
-          <TouchableOpacity
-            style={[styles.addBtn, {
-              backgroundColor: theme.primary,
-              shadowColor: '#4AFF72',
-              shadowOffset: { width: 0, height: 0 },
-              shadowRadius: 20,
-              shadowOpacity: 0.5,
-              elevation: 8,
-            }]}
-            onPress={() => router.push('/task/create')}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="add" size={24} color="#000" />
-          </TouchableOpacity>
-        </View>
-
-        {/* ── Header Row 2: Streak | Battery | Social Proof stat bar ── */}
-        <View style={styles.headerRow2}>
+        {/* ── Top bar: Streak pill + Social Proof pill, centered ── */}
+        <View style={styles.topBar}>
           <StreakBadge tasks={allTasks} />
-          <View style={styles.headerRow2Center}>
-            {allTasks.length > 0 && <ProductivityBattery tasks={allTasks} />}
-          </View>
           <SocialProofDrip compact />
         </View>
 
-        {/* Stats row — slides in after data loads */}
+        {/* ── Header: Title + Battery + Add button ── */}
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: theme.textPrimary, fontFamily: 'DMSerifDisplay_400Regular' }]}>
+            My Tasks
+          </Text>
+          <View style={styles.headerActions}>
+            {allTasks.length > 0 && <ProductivityBattery tasks={allTasks} />}
+            <TouchableOpacity
+              style={[styles.addBtn, {
+                backgroundColor: theme.primary,
+                shadowColor: '#4AFF72',
+                shadowOffset: { width: 0, height: 0 },
+                shadowRadius: 20,
+                shadowOpacity: 0.5,
+                elevation: 8,
+              }]}
+              onPress={() => router.push('/task/create')}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="add" size={24} color="#000" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Stats row */}
         <Animated.View style={[
           styles.statsRow,
           { opacity: statsAnim, transform: [{ translateY: statsSlide }] },
@@ -261,32 +257,34 @@ export default function TasksScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
 
-  // Header Row 1
-  headerRow1: {
+  // ── Top bar: streak + social proof, centered above everything ──
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 6,
+    paddingBottom: 10,
+    gap: 8,
+  },
+
+  // ── Header: title left, battery + add right ──
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 4,
+    paddingBottom: 14,
   },
   title: { fontSize: 32, letterSpacing: -0.5 },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
   addBtn: {
     width: 44, height: 44, borderRadius: 13,
     justifyContent: 'center', alignItems: 'center',
-  },
-
-  // Header Row 2 — stat bar
-  headerRow2: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 14,
-    gap: 10,
-  },
-  headerRow2Center: {
-    flex: 1,
-    alignItems: 'center',
   },
 
   statsRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingBottom: 12 },

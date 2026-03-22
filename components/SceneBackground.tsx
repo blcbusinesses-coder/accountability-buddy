@@ -2,66 +2,44 @@ import { useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
+/**
+ * Unified full-screen background — single gradient base, one animated overlay.
+ * No partial-size layers so there are zero visible seams.
+ * Using rgba(6,13,10,0) instead of 'transparent' avoids the Android black-fade artifact.
+ */
 export default function SceneBackground({ children }: { children: React.ReactNode }) {
-  // Two glow layers alternate opacity for a slow breathing/drift effect
-  const breatheA = useRef(new Animated.Value(1)).current;
-  const breatheB = useRef(new Animated.Value(0.3)).current;
+  const breathe = useRef(new Animated.Value(0.5)).current;
 
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.parallel([
-          Animated.timing(breatheA, { toValue: 0.3, duration: 5000, useNativeDriver: true }),
-          Animated.timing(breatheB, { toValue: 1, duration: 5000, useNativeDriver: true }),
-        ]),
-        Animated.parallel([
-          Animated.timing(breatheA, { toValue: 1, duration: 5000, useNativeDriver: true }),
-          Animated.timing(breatheB, { toValue: 0.3, duration: 5000, useNativeDriver: true }),
-        ]),
+        Animated.timing(breathe, { toValue: 1, duration: 5000, useNativeDriver: true }),
+        Animated.timing(breathe, { toValue: 0.25, duration: 5000, useNativeDriver: true }),
       ])
     ).start();
   }, []);
 
   return (
     <View style={styles.root}>
-      {/* Base: deep black-green */}
-      <View style={[styles.absolute, { backgroundColor: '#060d0a' }]} />
-
-      {/* Breathing layer A: top-left green glow */}
-      <Animated.View style={[styles.absolute, styles.topLeft, { opacity: breatheA }]}>
-        <LinearGradient
-          colors={['rgba(74,255,114,0.13)', 'transparent']}
-          style={StyleSheet.absoluteFill}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        />
-      </Animated.View>
-
-      {/* Breathing layer B: shifted top-center glow (alternates with A) */}
-      <Animated.View style={[styles.absolute, styles.topCenter, { opacity: breatheB }]}>
-        <LinearGradient
-          colors={['rgba(74,255,114,0.09)', 'transparent']}
-          style={StyleSheet.absoluteFill}
-          start={{ x: 0.3, y: 0 }}
-          end={{ x: 0.9, y: 0.7 }}
-        />
-      </Animated.View>
-
-      {/* Static: top-right subtle teal accent */}
+      {/* ── Layer 1: solid base, full screen, no partial edges ── */}
       <LinearGradient
-        colors={['rgba(0,200,150,0.06)', 'transparent']}
-        style={[styles.absolute, styles.topRight]}
-        start={{ x: 1, y: 0 }}
-        end={{ x: 0, y: 1 }}
+        colors={['#0c1c13', '#060d0a', '#060d0a', '#071510']}
+        locations={[0, 0.28, 0.72, 1]}
+        style={styles.fill}
+        start={{ x: 0.25, y: 0 }}
+        end={{ x: 0.75, y: 1 }}
       />
 
-      {/* Static: bottom center deep forest depth */}
-      <LinearGradient
-        colors={['transparent', 'rgba(20,80,60,0.18)']}
-        style={[styles.absolute, styles.bottomCenter]}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-      />
+      {/* ── Layer 2: animated breathing glow, also full screen ── */}
+      <Animated.View style={[styles.fill, { opacity: breathe }]}>
+        <LinearGradient
+          colors={['rgba(74,255,114,0.11)', 'rgba(6,13,10,0)', 'rgba(6,13,10,0)']}
+          locations={[0, 0.5, 1]}
+          style={styles.fill}
+          start={{ x: 0.2, y: 0 }}
+          end={{ x: 0.8, y: 0.7 }}
+        />
+      </Animated.View>
 
       {children}
     </View>
@@ -70,9 +48,5 @@ export default function SceneBackground({ children }: { children: React.ReactNod
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  absolute: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
-  topLeft: { width: '75%', height: '50%', top: 0, left: 0 },
-  topCenter: { width: '80%', height: '50%', top: 0, left: '10%' },
-  topRight: { width: '50%', height: '40%', top: 0, right: 0 },
-  bottomCenter: { height: '55%', bottom: 0 },
+  fill: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
 });

@@ -1,14 +1,13 @@
 /**
  * Feature 7 — Social Proof Drip
- * Live-style "X proofs submitted today" indicator with count-up and pulse dot.
- * Supports `compact` prop to remove outer padding/margin for inline header use.
+ * Live "X proofs submitted today" indicator with count-up animation and pulse dot.
+ * Shows real Supabase count. Supports `compact` prop for inline use.
  */
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { supabase } from '../lib/supabase';
 
 export default function SocialProofDrip({ compact }: { compact?: boolean }) {
-  const [count, setCount] = useState(0);
   const [displayCount, setDisplayCount] = useState(0);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const pulseOpacity = useRef(new Animated.Value(1)).current;
@@ -29,20 +28,23 @@ export default function SocialProofDrip({ compact }: { compact?: boolean }) {
         .select('*', { count: 'exact', head: true })
         .gte('created_at', todayStart.toISOString());
 
-      const total = (todayCount ?? 0) + 847;
-      setCount(total);
+      const total = todayCount ?? 0;
 
       Animated.timing(containerOpacity, {
         toValue: 1, duration: 400, useNativeDriver: true,
       }).start();
 
+      if (total === 0) {
+        setDisplayCount(0);
+        return;
+      }
+
+      // Count up from 90% to 100%
       const start = Math.floor(total * 0.9);
-      const duration = 800;
-      const steps = 30;
+      const steps = 20;
       const increment = (total - start) / steps;
       let current = start;
       let step = 0;
-
       const interval = setInterval(() => {
         step++;
         current += increment;
@@ -51,10 +53,9 @@ export default function SocialProofDrip({ compact }: { compact?: boolean }) {
           clearInterval(interval);
           setDisplayCount(total);
         }
-      }, duration / steps);
+      }, 800 / steps);
     } catch {
-      setCount(1204);
-      setDisplayCount(1204);
+      // Silently show 0 on error
       Animated.timing(containerOpacity, {
         toValue: 1, duration: 400, useNativeDriver: true,
       }).start();
@@ -77,21 +78,18 @@ export default function SocialProofDrip({ compact }: { compact?: boolean }) {
     ).start();
   };
 
-  const formatted = displayCount.toLocaleString();
+  const label = displayCount === 1 ? '1 proof today' : `${displayCount.toLocaleString()} proofs today`;
 
   return (
     <Animated.View style={[compact ? styles.wrapperCompact : styles.wrapper, { opacity: containerOpacity }]}>
       <View style={styles.pill}>
-        {/* Pulse ring */}
+        {/* Pulsing ring */}
         <Animated.View
           style={[styles.pulseDot, { opacity: pulseOpacity, transform: [{ scale: pulseAnim }] }]}
         />
-        {/* Solid red dot */}
+        {/* Solid dot */}
         <View style={styles.solidDot} />
-        <Text style={styles.text}>
-          <Text style={styles.count}>{formatted}</Text>
-          {' '}proofs today
-        </Text>
+        <Text style={styles.text}>{label}</Text>
       </View>
     </Animated.View>
   );
@@ -103,7 +101,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   wrapperCompact: {
-    // No padding/margin — used inline in header row
+    // No outer margin — used inline in header/top bar
   },
   pill: {
     flexDirection: 'row',
@@ -133,11 +131,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.5)',
-    fontWeight: '500',
-  },
-  count: {
-    color: 'rgba(255,255,255,0.8)',
-    fontWeight: '700',
+    color: 'rgba(255,255,255,0.55)',
+    fontFamily: 'Outfit_500Medium',
   },
 });

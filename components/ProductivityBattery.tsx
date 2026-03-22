@@ -1,6 +1,7 @@
 /**
- * Feature 8 — Productivity Battery (redesigned: horizontal compact pill)
- * Horizontal 5-segment bar with staggered left-to-right fill animation.
+ * Feature 8 — Productivity Battery (horizontal, header-scale)
+ * Sits to the left of the + button in the main header row.
+ * 5 horizontal segments, left-to-right staggered fill animation.
  * Tap to expand glass popover with exact % and 7-day bar chart.
  */
 import { useEffect, useRef, useState } from 'react';
@@ -78,11 +79,9 @@ export default function ProductivityBattery({ tasks }: Props) {
     Array.from({ length: 5 }, () => new Animated.Value(0))
   ).current;
 
-  // Low battery pulse
   const lowPulse = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    // Fill left to right: bar 0 fills first
     const anims = barAnims.map((anim, i) => {
       const shouldFill = i < bars;
       return Animated.sequence([
@@ -115,20 +114,19 @@ export default function ProductivityBattery({ tasks }: Props) {
         activeOpacity={0.75}
         style={styles.wrapper}
       >
-        {/* Horizontal battery */}
         <View style={styles.batteryContainer}>
-          {/* Battery body */}
+          {/* Battery body — same borderRadius and height weight as the + button */}
           <View style={[styles.batteryBody, { borderColor: theme.borderStrong }]}>
             {Array.from({ length: 5 }, (_, i) => (
               <Animated.View
                 key={i}
                 style={[
                   styles.bar,
-                  i < 4 && styles.barGap,
+                  i < 4 && { marginRight: 3 },
                   {
                     backgroundColor: barAnims[i].interpolate({
                       inputRange: [0, 1],
-                      outputRange: ['rgba(255,255,255,0.07)', barColor],
+                      outputRange: ['rgba(255,255,255,0.08)', barColor],
                     }),
                     opacity: bars === 0 ? lowPulse : 1,
                   },
@@ -136,7 +134,7 @@ export default function ProductivityBattery({ tasks }: Props) {
               />
             ))}
           </View>
-          {/* Battery nub on the right */}
+          {/* Nub on the right */}
           <View style={[styles.batteryNub, { backgroundColor: theme.borderStrong }]} />
         </View>
       </TouchableOpacity>
@@ -154,7 +152,9 @@ export default function ProductivityBattery({ tasks }: Props) {
           onPress={() => setPopoverVisible(false)}
         >
           <View style={[styles.popover, { backgroundColor: theme.surfaceStrong, borderColor: theme.borderStrong }]}>
-            <Text style={[styles.popTitle, { color: theme.textPrimary, fontFamily: 'Outfit_700Bold' }]}>Productivity Battery</Text>
+            <Text style={[styles.popTitle, { color: theme.textPrimary, fontFamily: 'Outfit_700Bold' }]}>
+              Productivity Battery
+            </Text>
 
             <View style={styles.pctRow}>
               <Text style={[styles.pctBig, { color: barColor, fontFamily: 'Outfit_700Bold' }]}>{pct}%</Text>
@@ -163,7 +163,6 @@ export default function ProductivityBattery({ tasks }: Props) {
               </Text>
             </View>
 
-            {/* 7-day bar chart */}
             <View style={styles.chart}>
               {sevenDayData.map((d, i) => {
                 const barH = d.total > 0 ? (d.completed / maxDayCount) * 48 : 4;
@@ -173,14 +172,13 @@ export default function ProductivityBattery({ tasks }: Props) {
                       <View
                         style={[
                           styles.chartBar,
-                          {
-                            height: barH,
-                            backgroundColor: d.completed > 0 ? barColor : theme.surfaceElevated,
-                          },
+                          { height: barH, backgroundColor: d.completed > 0 ? barColor : theme.surfaceElevated },
                         ]}
                       />
                     </View>
-                    <Text style={[styles.chartDay, { color: theme.textMuted, fontFamily: 'Outfit_600SemiBold' }]}>{d.day}</Text>
+                    <Text style={[styles.chartDay, { color: theme.textMuted, fontFamily: 'Outfit_600SemiBold' }]}>
+                      {d.day}
+                    </Text>
                   </View>
                 );
               })}
@@ -190,7 +188,9 @@ export default function ProductivityBattery({ tasks }: Props) {
               style={[styles.closePopover, { backgroundColor: theme.surfaceElevated }]}
               onPress={() => setPopoverVisible(false)}
             >
-              <Text style={[styles.closePopoverText, { color: theme.textSecondary, fontFamily: 'Outfit_600SemiBold' }]}>Close</Text>
+              <Text style={[styles.closePopoverText, { color: theme.textSecondary, fontFamily: 'Outfit_600SemiBold' }]}>
+                Close
+              </Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -208,28 +208,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  // Match the + button's visual weight: borderRadius 13, height 38
   batteryBody: {
-    width: 64,
-    height: 22,
-    borderRadius: 6,
+    width: 88,
+    height: 38,
+    borderRadius: 13,
     borderWidth: 1.5,
-    padding: 3,
+    padding: 5,
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 2,
   },
   batteryNub: {
-    width: 4,
-    height: 10,
-    borderRadius: 1.5,
-    marginLeft: 2,
+    width: 5,
+    height: 16,
+    borderRadius: 2,
+    marginLeft: 3,
   },
   bar: {
     flex: 1,
-    borderRadius: 2,
-  },
-  barGap: {
-    // gap is handled by parent's gap property
+    borderRadius: 4,
   },
   modalOverlay: {
     flex: 1,
@@ -245,53 +241,15 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 16,
   },
-  popTitle: {
-    fontSize: 16,
-    letterSpacing: -0.3,
-  },
-  pctRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 8,
-  },
-  pctBig: {
-    fontSize: 40,
-    letterSpacing: -1,
-  },
-  pctLabel: {
-    fontSize: 13,
-  },
-  chart: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 6,
-    height: 68,
-  },
-  chartCol: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 4,
-  },
-  chartBarWrap: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    width: '100%',
-    alignItems: 'center',
-  },
-  chartBar: {
-    width: '80%',
-    minHeight: 4,
-    borderRadius: 3,
-  },
-  chartDay: {
-    fontSize: 10,
-  },
-  closePopover: {
-    borderRadius: 10,
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  closePopoverText: {
-    fontSize: 14,
-  },
+  popTitle: { fontSize: 16, letterSpacing: -0.3 },
+  pctRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
+  pctBig: { fontSize: 40, letterSpacing: -1 },
+  pctLabel: { fontSize: 13 },
+  chart: { flexDirection: 'row', alignItems: 'flex-end', gap: 6, height: 68 },
+  chartCol: { flex: 1, alignItems: 'center', gap: 4 },
+  chartBarWrap: { flex: 1, justifyContent: 'flex-end', width: '100%', alignItems: 'center' },
+  chartBar: { width: '80%', minHeight: 4, borderRadius: 3 },
+  chartDay: { fontSize: 10 },
+  closePopover: { borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
+  closePopoverText: { fontSize: 14 },
 });
