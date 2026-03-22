@@ -5,23 +5,25 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
-import { Colors } from '../../constants/colors';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function CreateTaskScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const { theme } = useTheme();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState(() => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(12, 0, 0, 0);
-    return tomorrow;
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    d.setHours(12, 0, 0, 0);
+    return d;
   });
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -29,93 +31,79 @@ export default function CreateTaskScreen() {
 
   const formatDate = (d: Date) =>
     d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-
   const formatTime = (d: Date) =>
     d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
   const handleCreate = async () => {
-    if (!title.trim()) {
-      Alert.alert('Missing title', 'Please enter a task title.');
-      return;
-    }
+    if (!title.trim()) { Alert.alert('Missing title', 'Please enter a task title.'); return; }
     if (!user) return;
-
-    const now = new Date();
-    if (dueDate <= now) {
-      Alert.alert('Invalid due date', 'Due date must be in the future.');
-      return;
-    }
+    if (dueDate <= new Date()) { Alert.alert('Invalid due date', 'Due date must be in the future.'); return; }
 
     setLoading(true);
-
-    const dateStr = dueDate.toISOString().split('T')[0]; // YYYY-MM-DD
-    const timeStr = dueDate.toTimeString().slice(0, 5);  // HH:MM
-
     const { error } = await supabase.from('tasks').insert({
       user_id: user.id,
       title: title.trim(),
       description: description.trim() || null,
-      due_date: dateStr,
-      due_time: timeStr,
+      due_date: dueDate.toISOString().split('T')[0],
+      due_time: dueDate.toTimeString().slice(0, 5),
       status: 'pending',
     });
-
     setLoading(false);
-
-    if (error) {
-      Alert.alert('Error', error.message);
-    } else {
-      router.back();
-    }
+    if (error) Alert.alert('Error', error.message);
+    else router.back();
   };
 
+  const canCreate = title.trim().length > 0 && !loading;
+
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
-          <Ionicons name="close" size={22} color={Colors.textSecondary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>New Task</Text>
+      <View style={[styles.header, { borderBottomColor: theme.border }]}>
         <TouchableOpacity
-          style={[styles.saveBtn, (!title.trim() || loading) && styles.saveBtnDisabled]}
-          onPress={handleCreate}
-          disabled={!title.trim() || loading}
+          onPress={() => router.back()}
+          style={[styles.iconBtn, { backgroundColor: theme.surfaceElevated }]}
         >
-          {loading ? (
-            <ActivityIndicator color="#fff" size="small" />
-          ) : (
-            <Text style={styles.saveBtnText}>Create</Text>
-          )}
+          <Ionicons name="close" size={20} color={theme.textSecondary} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>New Task</Text>
+        <TouchableOpacity
+          style={[styles.createBtn, { backgroundColor: theme.primary }, !canCreate && styles.disabled]}
+          onPress={handleCreate}
+          disabled={!canCreate}
+        >
+          {loading
+            ? <ActivityIndicator color="#000" size="small" />
+            : <Text style={styles.createBtnText}>Create</Text>
+          }
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        {/* Task title */}
+      <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        {/* Title */}
         <View style={styles.section}>
-          <Text style={styles.label}>Task Title *</Text>
+          <Text style={[styles.label, { color: theme.textMuted }]}>Task Title *</Text>
           <TextInput
-            style={styles.titleInput}
+            style={[styles.titleInput, { backgroundColor: theme.surface, borderColor: theme.border, color: theme.textPrimary }]}
             value={title}
             onChangeText={setTitle}
             placeholder="What do you need to do?"
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={theme.textMuted}
             multiline
             maxLength={120}
             autoFocus
           />
-          <Text style={styles.charCount}>{title.length}/120</Text>
+          <Text style={[styles.charCount, { color: theme.textMuted }]}>{title.length}/120</Text>
         </View>
 
         {/* Description */}
         <View style={styles.section}>
-          <Text style={styles.label}>Description (optional)</Text>
+          <Text style={[styles.label, { color: theme.textMuted }]}>Description (optional)</Text>
           <TextInput
-            style={styles.descInput}
+            style={[styles.descInput, { backgroundColor: theme.surface, borderColor: theme.border, color: theme.textPrimary }]}
             value={description}
             onChangeText={setDescription}
             placeholder="Add details about how to prove completion..."
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={theme.textMuted}
             multiline
             numberOfLines={3}
             maxLength={500}
@@ -124,99 +112,82 @@ export default function CreateTaskScreen() {
 
         {/* Due Date & Time */}
         <View style={styles.section}>
-          <Text style={styles.label}>Due Date & Time</Text>
+          <Text style={[styles.label, { color: theme.textMuted }]}>Due Date & Time</Text>
 
           <TouchableOpacity
-            style={styles.dateRow}
-            onPress={() => {
-              setShowTimePicker(false);
-              setShowDatePicker(true);
-            }}
+            style={[styles.dateRow, { backgroundColor: theme.surface, borderColor: theme.border }]}
+            onPress={() => { setShowTimePicker(false); setShowDatePicker(true); }}
             activeOpacity={0.7}
           >
-            <View style={styles.dateIconBg}>
-              <Ionicons name="calendar-outline" size={20} color={Colors.primaryLight} />
+            <View style={[styles.dateIcon, { backgroundColor: theme.primaryMuted }]}>
+              <Ionicons name="calendar-outline" size={18} color={theme.primary} />
             </View>
-            <View style={styles.dateContent}>
-              <Text style={styles.dateLabel}>Date</Text>
-              <Text style={styles.dateValue}>{formatDate(dueDate)}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.dateLabel, { color: theme.textMuted }]}>Date</Text>
+              <Text style={[styles.dateValue, { color: theme.textPrimary }]}>{formatDate(dueDate)}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
+            <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.dateRow}
-            onPress={() => {
-              setShowDatePicker(false);
-              setShowTimePicker(true);
-            }}
+            style={[styles.dateRow, { backgroundColor: theme.surface, borderColor: theme.border }]}
+            onPress={() => { setShowDatePicker(false); setShowTimePicker(true); }}
             activeOpacity={0.7}
           >
-            <View style={styles.dateIconBg}>
-              <Ionicons name="time-outline" size={20} color={Colors.primaryLight} />
+            <View style={[styles.dateIcon, { backgroundColor: theme.primaryMuted }]}>
+              <Ionicons name="time-outline" size={18} color={theme.primary} />
             </View>
-            <View style={styles.dateContent}>
-              <Text style={styles.dateLabel}>Time</Text>
-              <Text style={styles.dateValue}>{formatTime(dueDate)}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.dateLabel, { color: theme.textMuted }]}>Time</Text>
+              <Text style={[styles.dateValue, { color: theme.textPrimary }]}>{formatTime(dueDate)}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
+            <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
           </TouchableOpacity>
         </View>
 
-        {/* Inline DateTimePicker for Android */}
         {showDatePicker && (
-          <View style={styles.pickerWrapper}>
+          <View style={[styles.pickerWrap, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <DateTimePicker
-              value={dueDate}
-              mode="date"
+              value={dueDate} mode="date"
               display={Platform.OS === 'ios' ? 'spinner' : 'default'}
               minimumDate={new Date()}
-              onChange={(event, selectedDate) => {
+              onChange={(_, d) => {
                 if (Platform.OS === 'android') setShowDatePicker(false);
-                if (selectedDate) {
-                  const next = new Date(dueDate);
-                  next.setFullYear(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
-                  setDueDate(next);
-                }
+                if (d) { const n = new Date(dueDate); n.setFullYear(d.getFullYear(), d.getMonth(), d.getDate()); setDueDate(n); }
               }}
-              themeVariant="dark"
+              themeVariant={theme.isDark ? 'dark' : 'light'}
             />
             {Platform.OS === 'ios' && (
-              <TouchableOpacity style={styles.pickerDone} onPress={() => setShowDatePicker(false)}>
-                <Text style={styles.pickerDoneText}>Done</Text>
+              <TouchableOpacity style={[styles.pickerDone, { borderTopColor: theme.border }]} onPress={() => setShowDatePicker(false)}>
+                <Text style={[styles.pickerDoneText, { color: theme.primary }]}>Done</Text>
               </TouchableOpacity>
             )}
           </View>
         )}
 
         {showTimePicker && (
-          <View style={styles.pickerWrapper}>
+          <View style={[styles.pickerWrap, { backgroundColor: theme.surface, borderColor: theme.border }]}>
             <DateTimePicker
-              value={dueDate}
-              mode="time"
+              value={dueDate} mode="time"
               display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={(event, selectedDate) => {
+              onChange={(_, d) => {
                 if (Platform.OS === 'android') setShowTimePicker(false);
-                if (selectedDate) {
-                  const next = new Date(dueDate);
-                  next.setHours(selectedDate.getHours(), selectedDate.getMinutes());
-                  setDueDate(next);
-                }
+                if (d) { const n = new Date(dueDate); n.setHours(d.getHours(), d.getMinutes()); setDueDate(n); }
               }}
-              themeVariant="dark"
+              themeVariant={theme.isDark ? 'dark' : 'light'}
             />
             {Platform.OS === 'ios' && (
-              <TouchableOpacity style={styles.pickerDone} onPress={() => setShowTimePicker(false)}>
-                <Text style={styles.pickerDoneText}>Done</Text>
+              <TouchableOpacity style={[styles.pickerDone, { borderTopColor: theme.border }]} onPress={() => setShowTimePicker(false)}>
+                <Text style={[styles.pickerDoneText, { color: theme.primary }]}>Done</Text>
               </TouchableOpacity>
             )}
           </View>
         )}
 
         {/* Tip */}
-        <View style={styles.tip}>
-          <Ionicons name="bulb-outline" size={16} color={Colors.primaryLight} />
-          <Text style={styles.tipText}>
+        <View style={[styles.tip, { backgroundColor: theme.primaryMuted, borderColor: theme.border }]}>
+          <Ionicons name="bulb-outline" size={16} color={theme.primary} />
+          <Text style={[styles.tipText, { color: theme.textSecondary }]}>
             You'll need to submit a photo, text, or audio proof to complete this task.
           </Text>
         </View>
@@ -226,64 +197,44 @@ export default function CreateTaskScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16,
-    paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.border,
+    paddingVertical: 12, borderBottomWidth: 1, gap: 12,
   },
-  closeBtn: {
-    width: 36, height: 36, borderRadius: 10,
-    backgroundColor: Colors.surfaceElevated, justifyContent: 'center', alignItems: 'center',
-  },
-  headerTitle: {
-    flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '600', color: Colors.textPrimary,
-  },
-  saveBtn: {
-    backgroundColor: Colors.primary, borderRadius: 10,
-    paddingHorizontal: 16, paddingVertical: 8, minWidth: 70, alignItems: 'center',
-  },
-  saveBtnDisabled: { opacity: 0.4 },
-  saveBtnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
-  scroll: { flex: 1 },
-  section: {
-    paddingHorizontal: 20, paddingTop: 20, paddingBottom: 4,
-  },
-  label: { fontSize: 12, fontWeight: '600', color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 },
+  iconBtn: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  headerTitle: { flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '600' },
+  createBtn: { borderRadius: 10, paddingHorizontal: 16, paddingVertical: 8, minWidth: 72, alignItems: 'center' },
+  disabled: { opacity: 0.4 },
+  createBtnText: { color: '#000', fontWeight: '700', fontSize: 14 },
+  section: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 4 },
+  label: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 },
   titleInput: {
-    backgroundColor: Colors.surface, borderRadius: 14, padding: 14,
-    fontSize: 17, color: Colors.textPrimary, borderWidth: 1, borderColor: Colors.border,
-    minHeight: 60, textAlignVertical: 'top',
+    borderRadius: 14, padding: 14, fontSize: 17,
+    borderWidth: 1, minHeight: 60, textAlignVertical: 'top',
   },
-  charCount: { fontSize: 11, color: Colors.textMuted, textAlign: 'right', marginTop: 4 },
+  charCount: { fontSize: 11, textAlign: 'right', marginTop: 4 },
   descInput: {
-    backgroundColor: Colors.surface, borderRadius: 14, padding: 14,
-    fontSize: 15, color: Colors.textPrimary, borderWidth: 1, borderColor: Colors.border,
-    minHeight: 90, textAlignVertical: 'top',
+    borderRadius: 14, padding: 14, fontSize: 15,
+    borderWidth: 1, minHeight: 90, textAlignVertical: 'top',
   },
   dateRow: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.surface, borderRadius: 14, padding: 14,
-    marginBottom: 10, borderWidth: 1, borderColor: Colors.border, gap: 12,
+    borderRadius: 14, padding: 14, marginBottom: 10,
+    borderWidth: 1, gap: 12,
   },
-  dateIconBg: {
-    width: 36, height: 36, borderRadius: 10,
-    backgroundColor: Colors.primaryMuted, justifyContent: 'center', alignItems: 'center',
+  dateIcon: { width: 34, height: 34, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  dateLabel: { fontSize: 11, marginBottom: 2 },
+  dateValue: { fontSize: 15, fontWeight: '500' },
+  pickerWrap: {
+    marginHorizontal: 20, borderRadius: 14,
+    overflow: 'hidden', borderWidth: 1, marginBottom: 10,
   },
-  dateContent: { flex: 1 },
-  dateLabel: { fontSize: 11, color: Colors.textMuted, marginBottom: 2 },
-  dateValue: { fontSize: 15, fontWeight: '500', color: Colors.textPrimary },
-  pickerWrapper: {
-    backgroundColor: Colors.surface, marginHorizontal: 20,
-    borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: Colors.border, marginBottom: 10,
-  },
-  pickerDone: {
-    padding: 14, alignItems: 'center', borderTopWidth: 1, borderTopColor: Colors.border,
-  },
-  pickerDoneText: { color: Colors.primaryLight, fontWeight: '600', fontSize: 15 },
+  pickerDone: { padding: 14, alignItems: 'center', borderTopWidth: 1 },
+  pickerDoneText: { fontWeight: '600', fontSize: 15 },
   tip: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 10,
-    margin: 20, padding: 14, backgroundColor: Colors.primaryMuted,
-    borderRadius: 12, borderWidth: 1, borderColor: Colors.border,
+    margin: 20, padding: 14, borderRadius: 12, borderWidth: 1,
   },
-  tipText: { flex: 1, fontSize: 13, color: Colors.textSecondary, lineHeight: 18 },
+  tipText: { flex: 1, fontSize: 13, lineHeight: 18 },
 });

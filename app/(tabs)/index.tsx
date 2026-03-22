@@ -1,33 +1,29 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   RefreshControl, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
+
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
-import { Colors } from '../../constants/colors';
+import { useTheme } from '../../context/ThemeContext';
 import TaskCard from '../../components/TaskCard';
+import ProductivityBattery from '../../components/ProductivityBattery';
+import StreakBadge from '../../components/StreakBadge';
+import type { Database } from '../../lib/supabase';
 
-type Task = {
-  id: string;
-  title: string;
-  description: string | null;
-  due_date: string;
-  due_time: string;
-  status: 'pending' | 'completed' | 'failed';
-  created_at: string;
-};
-
+type Task = Database['public']['Tables']['tasks']['Row'];
 type FilterType = 'all' | 'pending' | 'completed' | 'failed';
 
+// Fetch ALL tasks (unfiltered) for battery/streak, apply UI filter separately
 export default function TasksScreen() {
   const { user } = useAuth();
   const router = useRouter();
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const { theme } = useTheme();
+  const [allTasks, setAllTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<FilterType>('all');
@@ -35,37 +31,26 @@ export default function TasksScreen() {
   const fetchTasks = useCallback(async () => {
     if (!user) return;
 
-    let query = supabase
+    const { data, error } = await supabase
       .from('tasks')
       .select('*')
       .eq('user_id', user.id)
       .order('due_date', { ascending: true })
       .order('due_time', { ascending: true });
 
-    if (filter !== 'all') {
-      query = query.eq('status', filter);
-    }
-
-    const { data, error } = await query;
     if (!error && data) {
-      // Auto-fail overdue pending tasks
       const now = new Date();
-      const updated: Task[] = [];
       const toFail: string[] = [];
-
-      for (const task of data as Task[]) {
+      const updated: Task[] = (data as Task[]).map((task) => {
         if (task.status === 'pending') {
           const due = new Date(`${task.due_date}T${task.due_time}`);
           if (due < now) {
             toFail.push(task.id);
-            updated.push({ ...task, status: 'failed' });
-          } else {
-            updated.push(task);
+            return { ...task, status: 'failed' as const };
           }
-        } else {
-          updated.push(task);
         }
-      }
+        return task;
+      });
 
       if (toFail.length > 0) {
         await supabase
@@ -74,11 +59,11 @@ export default function TasksScreen() {
           .in('id', toFail);
       }
 
-      setTasks(updated);
+      setAllTasks(updated);
     }
     setLoading(false);
     setRefreshing(false);
-  }, [user, filter]);
+  }, [user]);
 
   useFocusEffect(
     useCallback(() => {
@@ -87,103 +72,102 @@ export default function TasksScreen() {
     }, [fetchTasks])
   );
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchTasks();
-  };
+  const filteredTasks = filter === 'all' ? allTasks : allTasks.filter((t) => t.status === filter);
 
   const stats = {
-    total: tasks.length,
-    completed: tasks.filter(t => t.status === 'completed').length,
-    pending: tasks.filter(t => t.status === 'pending').length,
-    failed: tasks.filter(t => t.status === 'failed').length,
+    total: allTasks.length,
+    completed: allTasks.filter((t) => t.status === 'completed').length,
+    pending: allTasks.filter((t) => t.status === 'pending').length,
+    failed: allTasks.filter((t) => t.status === 'failed').length,
   };
 
-  const FilterPill = ({ type, label }: { type: FilterType; label: string }) => (
-    <TouchableOpacity
-      style={[styles.filterPill, filter === type && styles.filterPillActive]}
-      onPress={() => setFilter(type)}
-      activeOpacity={0.7}
-    >
-      <Text style={[styles.filterPillText, filter === type && styles.filterPillTextActive]}>
-        {label}
-      </Text>
-    </TouchableOpacity>
+  const FilterPill = ({ type, label }: { type: FilterType; label: string }) => {
+    const active = filter === type;
+    return (
+      <TouchableOpacity
+        onPress={() => setFilter(type)}
+        activeOpacity={0.7}
+        style={[
+          styles.pill,
+          { borderColor: active ? theme.primary : theme.border },
+          active && { backgroundColor: theme.primaryMuted },
+        ]}
+      >
+        <Text style={[styles.pillText, { color: active ? theme.primary : theme.textSecondary }]}>
+          {label}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
+
+  const StatCard = ({
+    value, label, color,
+  }: { value: number; label: string; color: string }) => (
+    <View style={[styles.statCard, { borderColor: theme.border }]}>
+      <View style={[styles.statCardInner, { backgroundColor: theme.surface }]}>
+        <Text style={[styles.statNum, { color }]}>{value}</Text>
+        <Text style={[styles.statLabel, { color: theme.textMuted }]}>{label}</Text>
+      </View>
+    </View>
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>My Tasks</Text>
-          <Text style={styles.sub}>
-            {stats.pending} pending · {stats.completed} done
-          </Text>
+        <View style={styles.headerLeft}>
+          <Text style={[styles.title, { color: theme.textPrimary }]}>My Tasks</Text>
+          <StreakBadge tasks={allTasks} />
         </View>
         <TouchableOpacity
-          style={styles.addBtn}
+          style={[styles.addBtn, { backgroundColor: theme.primary }]}
           onPress={() => router.push('/task/create')}
           activeOpacity={0.8}
         >
-          <Ionicons name="add" size={24} color="#fff" />
+          <Ionicons name="add" size={24} color="#000" />
         </TouchableOpacity>
       </View>
 
-      {/* Stats row */}
+      {/* Stats */}
       <View style={styles.statsRow}>
-        <View style={[styles.statCard, { borderColor: Colors.border }]}>
-          <Text style={styles.statNum}>{stats.total}</Text>
-          <Text style={styles.statLabel}>Total</Text>
-        </View>
-        <View style={[styles.statCard, { borderColor: Colors.successMuted }]}>
-          <Text style={[styles.statNum, { color: Colors.success }]}>{stats.completed}</Text>
-          <Text style={styles.statLabel}>Done</Text>
-        </View>
-        <View style={[styles.statCard, { borderColor: Colors.primaryMuted }]}>
-          <Text style={[styles.statNum, { color: Colors.primaryLight }]}>{stats.pending}</Text>
-          <Text style={styles.statLabel}>Pending</Text>
-        </View>
-        <View style={[styles.statCard, { borderColor: Colors.errorMuted }]}>
-          <Text style={[styles.statNum, { color: Colors.error }]}>{stats.failed}</Text>
-          <Text style={styles.statLabel}>Failed</Text>
-        </View>
+        <StatCard value={stats.total} label="Total" color={theme.textPrimary} />
+        <StatCard value={stats.completed} label="Done" color={theme.success} />
+        <StatCard value={stats.pending} label="Pending" color={theme.primary} />
+        <StatCard value={stats.failed} label="Failed" color={theme.error} />
       </View>
+
+      {/* Productivity Battery */}
+      {allTasks.length > 0 && <ProductivityBattery tasks={allTasks} />}
 
       {/* Filter pills */}
       <View style={styles.filterRow}>
         <FilterPill type="all" label="All" />
         <FilterPill type="pending" label="Pending" />
-        <FilterPill type="completed" label="Completed" />
+        <FilterPill type="completed" label="Done" />
         <FilterPill type="failed" label="Failed" />
       </View>
 
-      {/* Task list */}
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator color={Colors.primary} size="large" />
+          <ActivityIndicator color={theme.primary} size="large" />
         </View>
       ) : (
         <FlatList
-          data={tasks}
+          data={filteredTasks}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <TaskCard task={item} onPress={() => router.push(`/task/${item.id}`)} />
           )}
           contentContainerStyle={styles.listContent}
           refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={Colors.primary}
-            />
+            <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchTasks(); }} tintColor={theme.primary} />
           }
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Ionicons name="checkmark-done-circle-outline" size={56} color={Colors.textMuted} />
-              <Text style={styles.emptyTitle}>No tasks yet</Text>
-              <Text style={styles.emptyText}>
-                Tap the + button to create your first task.
+              <Ionicons name="checkmark-done-circle-outline" size={56} color={theme.textMuted} />
+              <Text style={[styles.emptyTitle, { color: theme.textSecondary }]}>No tasks yet</Text>
+              <Text style={[styles.emptyText, { color: theme.textMuted }]}>
+                Tap + to create your first task
               </Text>
             </View>
           }
@@ -195,39 +179,33 @@ export default function TasksScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8,
+    paddingHorizontal: 20, paddingTop: 12, paddingBottom: 10,
   },
-  greeting: { fontSize: 26, fontWeight: '700', color: Colors.textPrimary, letterSpacing: -0.5 },
-  sub: { fontSize: 13, color: Colors.textSecondary, marginTop: 2 },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  title: { fontSize: 28, fontWeight: '700', letterSpacing: -0.5 },
   addBtn: {
-    width: 44, height: 44, borderRadius: 12,
-    backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center',
+    width: 44, height: 44, borderRadius: 13,
+    justifyContent: 'center', alignItems: 'center',
   },
-  statsRow: {
-    flexDirection: 'row', gap: 10, paddingHorizontal: 20, paddingVertical: 12,
-  },
+  statsRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingBottom: 12 },
   statCard: {
-    flex: 1, backgroundColor: Colors.surface, borderRadius: 12, padding: 10,
-    alignItems: 'center', borderWidth: 1,
+    flex: 1, borderRadius: 14, overflow: 'hidden', borderWidth: 1,
   },
-  statNum: { fontSize: 20, fontWeight: '700', color: Colors.textPrimary },
-  statLabel: { fontSize: 10, color: Colors.textSecondary, marginTop: 2 },
-  filterRow: {
-    flexDirection: 'row', paddingHorizontal: 20, paddingBottom: 12, gap: 8,
-  },
-  filterPill: {
+  statCardInner: { padding: 10, alignItems: 'center' },
+  statNum: { fontSize: 20, fontWeight: '800', letterSpacing: -0.5 },
+  statLabel: { fontSize: 10, fontWeight: '500', marginTop: 2 },
+  filterRow: { flexDirection: 'row', paddingHorizontal: 16, paddingBottom: 10, gap: 8 },
+  pill: {
     paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20,
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
+    borderWidth: 1,
   },
-  filterPillActive: { backgroundColor: Colors.primaryMuted, borderColor: Colors.primary },
-  filterPillText: { fontSize: 13, color: Colors.textSecondary, fontWeight: '500' },
-  filterPillTextActive: { color: Colors.primaryLight },
-  listContent: { paddingHorizontal: 20, paddingBottom: 24 },
+  pillText: { fontSize: 13, fontWeight: '600' },
+  listContent: { paddingTop: 4, paddingBottom: 120 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 8 },
-  emptyTitle: { fontSize: 18, fontWeight: '600', color: Colors.textSecondary },
-  emptyText: { fontSize: 14, color: Colors.textMuted, textAlign: 'center', paddingHorizontal: 24 },
+  emptyTitle: { fontSize: 18, fontWeight: '600' },
+  emptyText: { fontSize: 14, textAlign: 'center', paddingHorizontal: 24 },
 });

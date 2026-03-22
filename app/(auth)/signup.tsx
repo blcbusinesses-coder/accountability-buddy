@@ -4,11 +4,14 @@ import {
   KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator,
 } from 'react-native';
 import { Link } from 'expo-router';
+
+import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../lib/supabase';
-import { Colors } from '../../constants/colors';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function SignupScreen() {
+  const { theme } = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -29,176 +32,165 @@ export default function SignupScreen() {
       Alert.alert('Weak password', 'Password must be at least 6 characters.');
       return;
     }
-
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email: email.trim(),
-      password,
-    });
+    const { error } = await supabase.auth.signUp({ email: email.trim(), password });
     setLoading(false);
-
-    if (error) {
-      Alert.alert('Sign up failed', error.message);
-    } else {
-      setDone(true);
-    }
+    if (error) Alert.alert('Sign up failed', error.message);
+    else setDone(true);
   };
 
   if (done) {
     return (
-      <View style={styles.container}>
-        <View style={styles.successCard}>
-          <Ionicons name="checkmark-circle" size={64} color={Colors.success} />
-          <Text style={styles.successTitle}>Check your email!</Text>
-          <Text style={styles.successText}>
-            We sent a confirmation link to {email}. Click it to verify your account and sign in.
+      <LinearGradient colors={[theme.backgroundGradientStart, theme.backgroundGradientEnd]} style={styles.gradient}>
+        <View style={styles.successWrap}>
+          <View style={[styles.successIcon, { backgroundColor: theme.primaryMuted }]}>
+            <Ionicons name="checkmark-circle" size={48} color={theme.primary} />
+          </View>
+          <Text style={[styles.successTitle, { color: theme.textPrimary }]}>You're in!</Text>
+          <Text style={[styles.successDesc, { color: theme.textSecondary }]}>
+            We sent a confirmation link to {email}. Click it to activate your account.
           </Text>
           <Link href="/(auth)/login" asChild>
-            <TouchableOpacity style={styles.btn}>
+            <TouchableOpacity style={[styles.btn, { backgroundColor: theme.primary }]}>
               <Text style={styles.btnText}>Back to Login</Text>
             </TouchableOpacity>
           </Link>
         </View>
-      </View>
+      </LinearGradient>
     );
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.header}>
-          <View style={styles.logoContainer}>
-            <Ionicons name="checkmark-circle" size={52} color={Colors.primaryLight} />
-          </View>
-          <Text style={styles.appName}>Accountability Buddy</Text>
-          <Text style={styles.tagline}>Create your account</Text>
-        </View>
-
-        <View style={styles.form}>
-          <Text style={styles.formTitle}>Get started</Text>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="mail-outline" size={18} color={Colors.textMuted} style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                value={email}
-                onChangeText={setEmail}
-                placeholder="you@example.com"
-                placeholderTextColor={Colors.textMuted}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
+    <LinearGradient colors={[theme.backgroundGradientStart, theme.backgroundGradientEnd]} style={styles.gradient}>
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.logoWrap}>
+            <View style={[styles.logoCircle, { backgroundColor: theme.primaryMuted, borderColor: theme.border }]}>
+              <Ionicons name="checkmark-circle" size={40} color={theme.primary} />
             </View>
+            <Text style={[styles.appName, { color: theme.textPrimary }]}>Accountability Buddy</Text>
+            <Text style={[styles.tagline, { color: theme.textSecondary }]}>Create your account</Text>
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="lock-closed-outline" size={18} color={Colors.textMuted} style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, { flex: 1 }]}
-                value={password}
-                onChangeText={setPassword}
-                placeholder="Min. 6 characters"
-                placeholderTextColor={Colors.textMuted}
-                secureTextEntry={!showPassword}
-              />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
-                <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color={Colors.textMuted} />
+          <View style={[styles.card, { borderColor: theme.borderStrong }]}>
+            <View style={[styles.cardInner, { backgroundColor: theme.surface }]}>
+              <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Get started</Text>
+
+              {/* Email */}
+              <View style={styles.field}>
+                <Text style={[styles.label, { color: theme.textSecondary }]}>Email</Text>
+                <View style={[styles.inputRow, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
+                  <Ionicons name="mail-outline" size={17} color={theme.textMuted} style={styles.inputIcon} />
+                  <TextInput
+                    style={[styles.input, { color: theme.textPrimary }]}
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="you@example.com"
+                    placeholderTextColor={theme.textMuted}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                </View>
+              </View>
+
+              {/* Password */}
+              <View style={styles.field}>
+                <Text style={[styles.label, { color: theme.textSecondary }]}>Password</Text>
+                <View style={[styles.inputRow, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
+                  <Ionicons name="lock-closed-outline" size={17} color={theme.textMuted} style={styles.inputIcon} />
+                  <TextInput
+                    style={[styles.input, { color: theme.textPrimary, flex: 1 }]}
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="Min. 6 characters"
+                    placeholderTextColor={theme.textMuted}
+                    secureTextEntry={!showPassword}
+                  />
+                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
+                    <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={17} color={theme.textMuted} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Confirm password */}
+              <View style={styles.field}>
+                <Text style={[styles.label, { color: theme.textSecondary }]}>Confirm Password</Text>
+                <View style={[styles.inputRow, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
+                  <Ionicons name="lock-closed-outline" size={17} color={theme.textMuted} style={styles.inputIcon} />
+                  <TextInput
+                    style={[styles.input, { color: theme.textPrimary }]}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    placeholder="Repeat password"
+                    placeholderTextColor={theme.textMuted}
+                    secureTextEntry={!showPassword}
+                  />
+                </View>
+              </View>
+
+              <TouchableOpacity
+                style={[styles.btn, { backgroundColor: theme.primary }, loading && styles.btnDisabled]}
+                onPress={handleSignup}
+                disabled={loading}
+                activeOpacity={0.8}
+              >
+                {loading
+                  ? <ActivityIndicator color="#000" />
+                  : <Text style={styles.btnText}>Create Account</Text>
+                }
               </TouchableOpacity>
+
+              <View style={styles.footer}>
+                <Text style={[styles.footerText, { color: theme.textSecondary }]}>Already have an account? </Text>
+                <Link href="/(auth)/login" asChild>
+                  <TouchableOpacity>
+                    <Text style={[styles.footerLink, { color: theme.primary }]}>Sign In</Text>
+                  </TouchableOpacity>
+                </Link>
+              </View>
             </View>
           </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Confirm Password</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="lock-closed-outline" size={18} color={Colors.textMuted} style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                placeholder="Repeat password"
-                placeholderTextColor={Colors.textMuted}
-                secureTextEntry={!showPassword}
-              />
-            </View>
-          </View>
-
-          <TouchableOpacity
-            style={[styles.btn, loading && styles.btnDisabled]}
-            onPress={handleSignup}
-            disabled={loading}
-            activeOpacity={0.8}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.btnText}>Create Account</Text>
-            )}
-          </TouchableOpacity>
-
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Already have an account? </Text>
-            <Link href="/(auth)/login" asChild>
-              <TouchableOpacity>
-                <Text style={styles.footerLink}>Sign In</Text>
-              </TouchableOpacity>
-            </Link>
-          </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  scrollContent: { flexGrow: 1, justifyContent: 'center', padding: 24 },
-  header: { alignItems: 'center', marginBottom: 40 },
-  logoContainer: {
-    width: 88, height: 88, borderRadius: 24,
-    backgroundColor: Colors.primaryMuted,
-    justifyContent: 'center', alignItems: 'center', marginBottom: 16,
-    borderWidth: 1, borderColor: Colors.border,
+  gradient: { flex: 1 },
+  flex: { flex: 1 },
+  scroll: { flexGrow: 1, justifyContent: 'center', padding: 24 },
+  logoWrap: { alignItems: 'center', marginBottom: 36 },
+  logoCircle: {
+    width: 80, height: 80, borderRadius: 24,
+    justifyContent: 'center', alignItems: 'center', marginBottom: 14, borderWidth: 1,
   },
-  appName: { fontSize: 26, fontWeight: '700', color: Colors.textPrimary, letterSpacing: -0.5 },
-  tagline: { fontSize: 14, color: Colors.textSecondary, marginTop: 6 },
-  form: {
-    backgroundColor: Colors.surface, borderRadius: 20, padding: 24,
-    borderWidth: 1, borderColor: Colors.border,
-  },
-  formTitle: { fontSize: 20, fontWeight: '600', color: Colors.textPrimary, marginBottom: 24 },
-  inputGroup: { marginBottom: 16 },
-  label: { fontSize: 13, fontWeight: '500', color: Colors.textSecondary, marginBottom: 8 },
-  inputWrapper: {
+  appName: { fontSize: 24, fontWeight: '700', letterSpacing: -0.5 },
+  tagline: { fontSize: 14, marginTop: 6 },
+  card: { borderRadius: 24, overflow: 'hidden', borderWidth: 1 },
+  cardInner: { padding: 24 },
+  cardTitle: { fontSize: 22, fontWeight: '700', letterSpacing: -0.5, marginBottom: 24 },
+  field: { marginBottom: 16 },
+  label: { fontSize: 13, fontWeight: '500', marginBottom: 8 },
+  inputRow: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.surfaceElevated, borderRadius: 12,
-    borderWidth: 1, borderColor: Colors.border, paddingHorizontal: 14,
+    borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, height: 50,
   },
   inputIcon: { marginRight: 10 },
-  input: { flex: 1, height: 48, color: Colors.textPrimary, fontSize: 15 },
+  input: { flex: 1, fontSize: 15 },
   eyeBtn: { padding: 4 },
-  btn: {
-    backgroundColor: Colors.primary, borderRadius: 12,
-    height: 50, justifyContent: 'center', alignItems: 'center', marginTop: 8,
-  },
+  btn: { height: 52, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginTop: 8 },
   btnDisabled: { opacity: 0.6 },
-  btnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  btnText: { color: '#000', fontSize: 16, fontWeight: '700' },
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 20 },
-  footerText: { color: Colors.textSecondary, fontSize: 14 },
-  footerLink: { color: Colors.primaryLight, fontSize: 14, fontWeight: '600' },
-  successCard: {
-    flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32,
-  },
-  successTitle: { fontSize: 24, fontWeight: '700', color: Colors.textPrimary, marginTop: 16, marginBottom: 12 },
-  successText: { fontSize: 15, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22, marginBottom: 32 },
+  footerText: { fontSize: 14 },
+  footerLink: { fontSize: 14, fontWeight: '600' },
+  successWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
+  successIcon: { width: 96, height: 96, borderRadius: 28, justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
+  successTitle: { fontSize: 28, fontWeight: '700', letterSpacing: -0.5, marginBottom: 12 },
+  successDesc: { fontSize: 15, textAlign: 'center', lineHeight: 22, marginBottom: 36 },
 });

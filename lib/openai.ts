@@ -15,11 +15,9 @@ export type VerificationResult = {
 export async function verifyTaskWithPhoto(
   taskTitle: string,
   taskDescription: string | null,
-  photoUri: string
+  photoBase64: string
 ): Promise<VerificationResult> {
-  const base64 = await FileSystem.readAsStringAsync(photoUri, {
-    encoding: FileSystem.EncodingType.Base64,
-  });
+  const base64 = photoBase64;
 
   const response = await openai.chat.completions.create({
     model: 'gpt-4o',
@@ -120,7 +118,7 @@ export async function verifyTaskWithAudio(
 ): Promise<VerificationResult> {
   // Read audio file and send to Whisper for transcription
   const audioBase64 = await FileSystem.readAsStringAsync(audioUri, {
-    encoding: FileSystem.EncodingType.Base64,
+    encoding: 'base64' as any,
   });
 
   // Convert base64 to blob for Whisper API
