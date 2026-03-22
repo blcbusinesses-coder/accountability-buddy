@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  RefreshControl, ActivityIndicator, Animated,
+  RefreshControl, ActivityIndicator, Animated, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -228,11 +228,9 @@ export default function TasksScreen() {
             }
             ListEmptyComponent={
               <View style={styles.empty}>
-                <Ionicons
-                  name="checkmark-done-circle-outline"
-                  size={56}
-                  color={theme.textMuted}
-                  style={{ shadowColor: '#4AFF72', shadowRadius: 16, shadowOpacity: 0.4, shadowOffset: { width: 0, height: 0 } }}
+                <Image
+                  source={require('../../assets/icon.png')}
+                  style={styles.emptyRobot}
                 />
                 <Text style={[styles.emptyTitle, { color: theme.textSecondary, fontFamily: 'Outfit_600SemiBold' }]}>
                   No tasks yet
@@ -292,6 +290,10 @@ const styles = StyleSheet.create({
   listContent: { paddingTop: 4, paddingBottom: 140 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 8 },
+  emptyRobot: {
+    width: 88, height: 88, borderRadius: 22, opacity: 0.55,
+    shadowColor: '#4AFF72', shadowRadius: 16, shadowOpacity: 0.35, shadowOffset: { width: 0, height: 0 },
+  },
   emptyTitle: { fontSize: 18 },
   emptyText: { fontSize: 14, textAlign: 'center', paddingHorizontal: 24 },
 });

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator,
+  KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator, Image,
 } from 'react-native';
 import { Link } from 'expo-router';
 
@@ -44,9 +44,10 @@ export default function SignupScreen() {
     return (
       <SceneBackground>
         <View style={styles.successWrap}>
-          <View style={[styles.successIcon, { backgroundColor: theme.primaryMuted }]}>
-            <Ionicons name="checkmark-circle" size={48} color={theme.primary} />
-          </View>
+          <Image
+            source={require('../../assets/icon.png')}
+            style={styles.successRobot}
+          />
           <Text style={[styles.successTitle, { color: theme.textPrimary, fontFamily: 'DMSerifDisplay_400Regular' }]}>You're in!</Text>
           <Text style={[styles.successDesc, { color: theme.textSecondary, fontFamily: 'Outfit_400Regular' }]}>
             We sent a confirmation link to {email}. Click it to activate your account.
@@ -76,16 +77,10 @@ export default function SignupScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.logoWrap}>
-            <View style={[styles.logoCircle, {
-              backgroundColor: theme.primaryMuted,
-              borderColor: theme.border,
-              shadowColor: '#4AFF72',
-              shadowRadius: 16,
-              shadowOpacity: 0.3,
-              shadowOffset: { width: 0, height: 0 },
-            }]}>
-              <Ionicons name="checkmark-circle" size={40} color={theme.primary} />
-            </View>
+            <Image
+              source={require('../../assets/icon.png')}
+              style={styles.logoImg}
+            />
             <Text style={[styles.appName, { color: theme.textPrimary, fontFamily: 'DMSerifDisplay_400Regular', fontSize: 28 }]}>Accountability Buddy</Text>
             <Text style={[styles.tagline, { color: theme.textSecondary, fontFamily: 'Outfit_400Regular' }]}>Create your account</Text>
           </View>
@@ -184,9 +179,13 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: 24 },
   logoWrap: { alignItems: 'center', marginBottom: 36 },
-  logoCircle: {
-    width: 80, height: 80, borderRadius: 24,
-    justifyContent: 'center', alignItems: 'center', marginBottom: 14, borderWidth: 1,
+  logoImg: {
+    width: 88, height: 88, borderRadius: 22,
+    marginBottom: 14,
+    shadowColor: '#4AFF72',
+    shadowRadius: 20,
+    shadowOpacity: 0.45,
+    shadowOffset: { width: 0, height: 0 },
   },
   appName: { letterSpacing: -0.5 },
   tagline: { fontSize: 14, marginTop: 6 },
@@ -208,7 +207,10 @@ const styles = StyleSheet.create({
   footerText: { fontSize: 14 },
   footerLink: { fontSize: 14 },
   successWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
-  successIcon: { width: 96, height: 96, borderRadius: 28, justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
+  successRobot: {
+    width: 100, height: 100, borderRadius: 24, marginBottom: 20,
+    shadowColor: '#4AFF72', shadowRadius: 24, shadowOpacity: 0.6, shadowOffset: { width: 0, height: 0 },
+  },
   successTitle: { fontSize: 28, letterSpacing: -0.5, marginBottom: 12 },
   successDesc: { fontSize: 15, textAlign: 'center', lineHeight: 22, marginBottom: 36 },
 });

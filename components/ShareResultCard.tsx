@@ -1,28 +1,79 @@
 /**
- * Feature 1 — Share Your Result Card
- * Full-screen shareable card that slides up after AI approval.
+ * Feature 1 — Share Your Result Card (v2)
+ * Pure black card with animated swirling arc rings, robot mascot,
+ * completion badge, task name, stats, and bottom branding.
+ * Slides up after AI approval. Capturable for save/share.
  */
 import { useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Animated,
-  Dimensions, Alert, Platform,
+  Dimensions, Alert, Image, Easing,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import { captureRef } from 'react-native-view-shot';
 
 const { width, height } = Dimensions.get('window');
+const CARD_W = width - 48;
+const ROBOT = require('../assets/icon.png');
 
-const GRADIENTS: [string, string, string][] = [
-  ['#0a0a0f', '#0d2818', '#1a4a2e'],
-  ['#0a0a0f', '#1a1a2e', '#16213e'],
-  ['#080810', '#1a0a2e', '#2d1b4e'],
-  ['#0a0f0a', '#162816', '#1f3a1f'],
-  ['#100a0a', '#2e1414', '#4a1a1a'],
-];
+// ── Swirling arc ring ─────────────────────────────────────────────────────────
+function SwirlRing({
+  size, duration, delay = 0, clockwise = true,
+  color = 'rgba(74,255,114,0.14)', bw = 1.2, arc = false,
+}: {
+  size: number; duration: number; delay?: number;
+  clockwise?: boolean; color?: string; bw?: number; arc?: boolean;
+}) {
+  const rot = useRef(new Animated.Value(0)).current;
 
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.timing(rot, {
+        toValue: 1, duration,
+        useNativeDriver: true,
+        easing: Easing.linear,
+      })
+    );
+    const t = setTimeout(() => loop.start(), delay);
+    return () => { clearTimeout(t); loop.stop(); };
+  }, []);
+
+  const rotate = rot.interpolate({
+    inputRange: [0, 1],
+    outputRange: clockwise ? ['0deg', '360deg'] : ['360deg', '0deg'],
+  });
+
+  // arc=true → top+right borders only → sweeping arc look
+  const borderColors = arc
+    ? {
+        borderTopColor: color,
+        borderRightColor: color,
+        borderBottomColor: 'transparent',
+        borderLeftColor: 'transparent',
+      }
+    : {
+        borderTopColor: color,
+        borderRightColor: color,
+        borderBottomColor: color,
+        borderLeftColor: color,
+      };
+
+  return (
+    <Animated.View
+      style={{
+        position: 'absolute',
+        width: size, height: size, borderRadius: size / 2,
+        borderWidth: bw,
+        ...borderColors,
+        transform: [{ rotate }],
+      }}
+    />
+  );
+}
+
+// ── Props ─────────────────────────────────────────────────────────────────────
 interface Props {
   visible: boolean;
   taskName: string;
@@ -31,46 +82,51 @@ interface Props {
   onClose: () => void;
 }
 
-export default function ShareResultCard({
-  visible, taskName, streak, completionTime, onClose,
-}: Props) {
+// ── Component ─────────────────────────────────────────────────────────────────
+export default function ShareResultCard({ visible, taskName, streak, completionTime, onClose }: Props) {
   const slideAnim = useRef(new Animated.Value(height)).current;
+  const logoScale = useRef(new Animated.Value(0.6)).current;
+  const logoFade  = useRef(new Animated.Value(0)).current;
   const titleFade = useRef(new Animated.Value(0)).current;
-  const titleY = useRef(new Animated.Value(20)).current;
-  const streakFade = useRef(new Animated.Value(0)).current;
-  const streakY = useRef(new Animated.Value(20)).current;
-  const btnsFade = useRef(new Animated.Value(0)).current;
-  const cardRef = useRef<View>(null);
-
-  const gradientIndex = useRef(Math.floor(Math.random() * GRADIENTS.length)).current;
+  const titleY    = useRef(new Animated.Value(22)).current;
+  const statsFade = useRef(new Animated.Value(0)).current;
+  const statsY    = useRef(new Animated.Value(16)).current;
+  const btnsFade  = useRef(new Animated.Value(0)).current;
+  const cardRef   = useRef<View>(null);
 
   useEffect(() => {
     if (visible) {
-      // Slide card up
-      Animated.spring(slideAnim, {
-        toValue: 0, tension: 60, friction: 12, useNativeDriver: true,
-      }).start();
-      // Staggered fade-ups
+      Animated.spring(slideAnim, { toValue: 0, tension: 55, friction: 11, useNativeDriver: true }).start();
+
+      // Logo pop-in
       Animated.sequence([
-        Animated.delay(300),
+        Animated.delay(160),
         Animated.parallel([
-          Animated.timing(titleFade, { toValue: 1, duration: 400, useNativeDriver: true }),
-          Animated.timing(titleY, { toValue: 0, duration: 400, useNativeDriver: true }),
+          Animated.spring(logoScale, { toValue: 1, tension: 80, friction: 7, useNativeDriver: true }),
+          Animated.timing(logoFade, { toValue: 1, duration: 280, useNativeDriver: true }),
         ]),
-        Animated.delay(120),
+      ]).start();
+
+      // Staggered content
+      Animated.sequence([
+        Animated.delay(360),
         Animated.parallel([
-          Animated.timing(streakFade, { toValue: 1, duration: 350, useNativeDriver: true }),
-          Animated.timing(streakY, { toValue: 0, duration: 350, useNativeDriver: true }),
+          Animated.timing(titleFade, { toValue: 1, duration: 380, useNativeDriver: true }),
+          Animated.timing(titleY, { toValue: 0, duration: 380, useNativeDriver: true }),
         ]),
         Animated.delay(100),
-        Animated.timing(btnsFade, { toValue: 1, duration: 300, useNativeDriver: true }),
+        Animated.parallel([
+          Animated.timing(statsFade, { toValue: 1, duration: 320, useNativeDriver: true }),
+          Animated.timing(statsY, { toValue: 0, duration: 320, useNativeDriver: true }),
+        ]),
+        Animated.delay(80),
+        Animated.timing(btnsFade, { toValue: 1, duration: 280, useNativeDriver: true }),
       ]).start();
     } else {
       slideAnim.setValue(height);
-      titleFade.setValue(0);
-      titleY.setValue(20);
-      streakFade.setValue(0);
-      streakY.setValue(20);
+      logoScale.setValue(0.6); logoFade.setValue(0);
+      titleFade.setValue(0);   titleY.setValue(22);
+      statsFade.setValue(0);   statsY.setValue(16);
       btnsFade.setValue(0);
     }
   }, [visible]);
@@ -86,7 +142,7 @@ export default function ShareResultCard({
       const uri = await captureRef(cardRef, { format: 'png', quality: 1 });
       await MediaLibrary.saveToLibraryAsync(uri);
       Alert.alert('Saved! 🎉', 'Your result card was saved to your camera roll.');
-    } catch (e) {
+    } catch {
       Alert.alert('Error', 'Could not save card. Try screenshotting instead.');
     }
   };
@@ -101,7 +157,7 @@ export default function ShareResultCard({
       } else {
         Alert.alert('Not supported', 'Sharing is not available on this device.');
       }
-    } catch (e) {
+    } catch {
       Alert.alert('Error', 'Could not share card.');
     }
   };
@@ -109,67 +165,76 @@ export default function ShareResultCard({
   if (!visible) return null;
 
   return (
-    <Animated.View
-      style={[styles.overlay, { transform: [{ translateY: slideAnim }] }]}
-    >
-      {/* The card itself (captured for share/save) */}
-      <View
-        ref={cardRef}
-        style={styles.card}
-        collapsable={false}
-      >
-        <LinearGradient
-          colors={GRADIENTS[gradientIndex]}
-          style={styles.cardGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
-          {/* Glass container */}
-          <View style={styles.glassBox}>
-            {/* Trophy icon */}
-            <View style={styles.trophyWrap}>
-              <Text style={styles.trophyEmoji}>🏆</Text>
+    <Animated.View style={[styles.overlay, { transform: [{ translateY: slideAnim }] }]}>
+
+      {/* ── Capturable card ── */}
+      <View ref={cardRef} style={styles.card} collapsable={false}>
+
+        {/* Pure black base */}
+        <View style={styles.cardBg} />
+
+        {/* Swirling rings — behind content */}
+        <View style={styles.ringsWrap} pointerEvents="none">
+          <SwirlRing size={CARD_W * 0.90} duration={22000} clockwise  color="rgba(74,255,114,0.05)" bw={1} />
+          <SwirlRing size={CARD_W * 0.75} duration={15000} clockwise={false} color="rgba(74,255,114,0.09)" bw={1} arc />
+          <SwirlRing size={CARD_W * 0.58} duration={11000} delay={300} clockwise color="rgba(74,255,114,0.13)" bw={1.2} arc />
+          <SwirlRing size={CARD_W * 0.42} duration={8000}  delay={150} clockwise={false} color="rgba(74,255,114,0.18)" bw={1.2} arc />
+          <SwirlRing size={CARD_W * 0.26} duration={5500}  delay={500} clockwise color="rgba(74,255,114,0.26)" bw={1.5} />
+        </View>
+
+        {/* Card content */}
+        <View style={styles.cardContent}>
+
+          {/* Robot logo */}
+          <Animated.View style={[styles.logoWrap, { opacity: logoFade, transform: [{ scale: logoScale }] }]}>
+            <Image source={ROBOT} style={styles.robotImg} />
+          </Animated.View>
+
+          {/* TASK COMPLETE badge */}
+          <Animated.View style={[styles.badge, { opacity: titleFade, transform: [{ translateY: titleY }] }]}>
+            <Ionicons name="checkmark-circle" size={13} color="#4AFF72" />
+            <Text style={styles.badgeText}>TASK COMPLETE</Text>
+          </Animated.View>
+
+          {/* Task name */}
+          <Animated.Text
+            style={[styles.taskName, { opacity: titleFade, transform: [{ translateY: titleY }] }]}
+            numberOfLines={3}
+          >
+            {taskName}
+          </Animated.Text>
+
+          {/* Green separator */}
+          <Animated.View style={[styles.sep, { opacity: statsFade }]} />
+
+          {/* Stats */}
+          <Animated.View style={[styles.statsRow, { opacity: statsFade, transform: [{ translateY: statsY }] }]}>
+            <View style={styles.statItem}>
+              <Ionicons name="flame" size={16} color="#4AFF72" />
+              <Text style={styles.statVal}>{streak}</Text>
+              <Text style={styles.statLbl}>day streak</Text>
             </View>
+            <View style={styles.statDiv} />
+            <View style={styles.statItem}>
+              <Ionicons name="time-outline" size={15} color="rgba(255,255,255,0.45)" />
+              <Text style={styles.statVal}>{completionTime}</Text>
+              <Text style={styles.statLbl}>completed</Text>
+            </View>
+          </Animated.View>
 
-            {/* Task name */}
-            <Animated.Text
-              style={[
-                styles.taskName,
-                { opacity: titleFade, transform: [{ translateY: titleY }] },
-              ]}
-              numberOfLines={3}
-            >
-              {taskName}
-            </Animated.Text>
+          {/* Bottom branding */}
+          <Animated.View style={[styles.brandRow, { opacity: statsFade }]}>
+            <Image source={ROBOT} style={styles.brandLogo} />
+            <View>
+              <Text style={styles.brandName}>Accountability Buddy</Text>
+              <Text style={styles.brandTag}>Prove it. Or it didn't happen.</Text>
+            </View>
+          </Animated.View>
 
-            {/* Divider */}
-            <View style={styles.divider} />
-
-            {/* Streak + time */}
-            <Animated.View
-              style={[
-                styles.statsRow,
-                { opacity: streakFade, transform: [{ translateY: streakY }] },
-              ]}
-            >
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>🔥 {streak}</Text>
-                <Text style={styles.statLabel}>Day Streak</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>✅ Done</Text>
-                <Text style={styles.statLabel}>{completionTime}</Text>
-              </View>
-            </Animated.View>
-          </View>
-
-          {/* Watermark */}
-          <Text style={styles.watermark}>Accountability Buddy</Text>
-        </LinearGradient>
+        </View>
       </View>
 
-      {/* Action buttons */}
+      {/* ── Action buttons (outside captured area) ── */}
       <Animated.View style={[styles.actions, { opacity: btnsFade }]}>
         <TouchableOpacity style={styles.saveBtn} onPress={saveToLibrary} activeOpacity={0.8}>
           <Ionicons name="download-outline" size={20} color="#000" />
@@ -185,127 +250,118 @@ export default function ShareResultCard({
           <Text style={styles.closeBtnText}>Close</Text>
         </TouchableOpacity>
       </Animated.View>
+
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   overlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    top: 0,
-    backgroundColor: 'rgba(0,0,0,0.92)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 999,
-    paddingHorizontal: 24,
-    paddingBottom: 40,
+    position: 'absolute', bottom: 0, left: 0, right: 0, top: 0,
+    backgroundColor: 'rgba(0,0,0,0.95)',
+    justifyContent: 'center', alignItems: 'center',
+    zIndex: 999, paddingHorizontal: 24, paddingBottom: 40,
   },
+
+  // ── Card shell ──
   card: {
-    width: width - 48,
+    width: CARD_W,
     aspectRatio: 9 / 16,
     maxHeight: height * 0.62,
     borderRadius: 28,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(74,255,114,0.13)',
   },
-  cardGradient: {
+  cardBg: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#000000',
+  },
+  ringsWrap: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardContent: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 28,
+    paddingHorizontal: 24,
+    paddingVertical: 32,
+    gap: 12,
   },
-  glassBox: {
-    width: '100%',
-    backgroundColor: 'rgba(255,255,255,0.09)',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.20)',
-    padding: 24,
-    alignItems: 'center',
+
+  // ── Robot logo ──
+  logoWrap: {
+    shadowColor: '#4AFF72',
+    shadowRadius: 24,
+    shadowOpacity: 0.65,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 12,
+    marginBottom: 4,
   },
-  trophyWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
-    backgroundColor: 'rgba(74,255,114,0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(74,255,114,0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
+  robotImg: { width: 76, height: 76, borderRadius: 18 },
+
+  // ── Badge ──
+  badge: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: 'rgba(74,255,114,0.10)',
+    borderWidth: 1, borderColor: 'rgba(74,255,114,0.22)',
+    borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5,
   },
-  trophyEmoji: { fontSize: 36 },
+  badgeText: {
+    color: '#4AFF72', fontSize: 10, letterSpacing: 1.8,
+    fontFamily: 'Outfit_700Bold',
+  },
+
+  // ── Task name ──
   taskName: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    letterSpacing: -0.5,
-    lineHeight: 28,
+    fontSize: 22, color: '#FFFFFF',
+    textAlign: 'center', letterSpacing: -0.3, lineHeight: 28,
+    fontFamily: 'DMSerifDisplay_400Regular',
   },
-  divider: {
-    width: 40,
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    marginVertical: 18,
+
+  // ── Separator ──
+  sep: {
+    width: 44, height: 1,
+    backgroundColor: 'rgba(74,255,114,0.40)',
   },
+
+  // ── Stats ──
   statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 20,
+    flexDirection: 'row', alignItems: 'center', gap: 24,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)',
+    borderRadius: 16, paddingHorizontal: 22, paddingVertical: 12,
   },
-  statItem: { alignItems: 'center', gap: 4 },
-  statValue: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
-  statLabel: { fontSize: 11, color: 'rgba(255,255,255,0.55)', fontWeight: '500' },
-  statDivider: {
-    width: 1, height: 32,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+  statItem: { alignItems: 'center', gap: 3 },
+  statVal:  { fontSize: 18, color: '#FFFFFF', fontFamily: 'Outfit_700Bold' },
+  statLbl:  { fontSize: 9,  color: 'rgba(255,255,255,0.38)', fontFamily: 'Outfit_500Medium' },
+  statDiv:  { width: 1, height: 34, backgroundColor: 'rgba(255,255,255,0.10)' },
+
+  // ── Bottom branding ──
+  brandRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    position: 'absolute', bottom: 18,
   },
-  watermark: {
-    position: 'absolute',
-    bottom: 16,
-    right: 20,
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.25)',
-    fontWeight: '600',
-    letterSpacing: 0.5,
-  },
-  actions: {
-    width: '100%',
-    gap: 10,
-    marginTop: 20,
-  },
+  brandLogo: { width: 22, height: 22, borderRadius: 5, opacity: 0.7 },
+  brandName: { fontSize: 10, color: 'rgba(255,255,255,0.38)', fontFamily: 'Outfit_600SemiBold' },
+  brandTag:  { fontSize: 8,  color: 'rgba(255,255,255,0.20)', fontFamily: 'Outfit_400Regular' },
+
+  // ── Action buttons ──
+  actions: { width: '100%', gap: 10, marginTop: 18 },
   saveBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    backgroundColor: '#4AFF72',
-    borderRadius: 16,
-    paddingVertical: 15,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 10, backgroundColor: '#4AFF72', borderRadius: 16, paddingVertical: 15,
   },
-  saveBtnText: { color: '#000', fontSize: 15, fontWeight: '700' },
+  saveBtnText: { color: '#000', fontSize: 15, fontFamily: 'Outfit_700Bold' },
   shareBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    backgroundColor: 'rgba(74,255,114,0.12)',
-    borderRadius: 16,
-    paddingVertical: 15,
-    borderWidth: 1,
-    borderColor: 'rgba(74,255,114,0.3)',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 10, backgroundColor: 'rgba(74,255,114,0.10)',
+    borderRadius: 16, paddingVertical: 15,
+    borderWidth: 1, borderColor: 'rgba(74,255,114,0.28)',
   },
-  shareBtnText: { color: '#4AFF72', fontSize: 15, fontWeight: '700' },
-  closeBtn: {
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  closeBtnText: {
-    color: 'rgba(255,255,255,0.4)',
-    fontSize: 14,
-    fontWeight: '500',
-  },
+  shareBtnText: { color: '#4AFF72', fontSize: 15, fontFamily: 'Outfit_700Bold' },
+  closeBtn: { alignItems: 'center', paddingVertical: 10 },
+  closeBtnText: { color: 'rgba(255,255,255,0.32)', fontSize: 14, fontFamily: 'Outfit_500Medium' },
 });

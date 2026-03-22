@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator,
+  KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator, Image,
 } from 'react-native';
 import { Link } from 'expo-router';
 
@@ -39,16 +39,10 @@ export default function LoginScreen() {
         >
           {/* Logo */}
           <View style={styles.logoWrap}>
-            <View style={[styles.logoCircle, {
-              backgroundColor: theme.primaryMuted,
-              borderColor: theme.border,
-              shadowColor: '#4AFF72',
-              shadowRadius: 16,
-              shadowOpacity: 0.3,
-              shadowOffset: { width: 0, height: 0 },
-            }]}>
-              <Ionicons name="checkmark-circle" size={40} color={theme.primary} />
-            </View>
+            <Image
+              source={require('../../assets/icon.png')}
+              style={styles.logoImg}
+            />
             <Text style={[styles.appName, { color: theme.textPrimary, fontFamily: 'DMSerifDisplay_400Regular', fontSize: 28 }]}>Accountability Buddy</Text>
             <Text style={[styles.tagline, { color: theme.textSecondary, fontFamily: 'Outfit_400Regular' }]}>Get things done. For real.</Text>
           </View>
@@ -135,10 +129,13 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: 24 },
   logoWrap: { alignItems: 'center', marginBottom: 36 },
-  logoCircle: {
-    width: 80, height: 80, borderRadius: 24,
-    justifyContent: 'center', alignItems: 'center',
-    marginBottom: 14, borderWidth: 1,
+  logoImg: {
+    width: 88, height: 88, borderRadius: 22,
+    marginBottom: 14,
+    shadowColor: '#4AFF72',
+    shadowRadius: 20,
+    shadowOpacity: 0.45,
+    shadowOffset: { width: 0, height: 0 },
   },
   appName: { letterSpacing: -0.5 },
   tagline: { fontSize: 14, marginTop: 6 },
