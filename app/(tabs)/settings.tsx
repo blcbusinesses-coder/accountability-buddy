@@ -9,6 +9,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../context/ThemeContext';
+import SceneBackground from '../../components/SceneBackground';
+import GlassCard from '../../components/GlassCard';
 
 export default function SettingsScreen() {
   const { user, signOut } = useAuth();
@@ -65,167 +67,165 @@ export default function SettingsScreen() {
 
   const GlassSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
     <View style={styles.section}>
-      <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>{title}</Text>
-      <View style={[styles.card, { borderColor: theme.border }]}>
-        <View style={[styles.cardInner, { backgroundColor: theme.surface }]}>{children}</View>
-      </View>
+      <Text style={[styles.sectionLabel, { color: 'rgba(74,255,114,0.7)' }]}>{title}</Text>
+      <GlassCard>{children}</GlassCard>
     </View>
   );
 
   const RowDivider = () => <View style={[styles.divider, { backgroundColor: theme.border }]} />;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.textPrimary }]}>Settings</Text>
-          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>{user?.email}</Text>
-        </View>
-
-        {/* Appearance */}
-        <GlassSection title="Appearance">
-          <View style={styles.row}>
-            <Ionicons name={isDark ? 'moon-outline' : 'sunny-outline'} size={20} color={theme.primary} />
-            <Text style={[styles.rowLabel, { color: theme.textPrimary }]}>Dark Mode</Text>
-            <Switch
-              value={isDark}
-              onValueChange={toggleTheme}
-              trackColor={{ false: theme.border, true: theme.primaryMuted }}
-              thumbColor={isDark ? theme.primary : theme.textMuted}
-            />
+    <SceneBackground>
+      <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top']}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 140 }}>
+          <View style={styles.header}>
+            <Text style={[styles.title, { color: theme.textPrimary, fontFamily: 'DMSerifDisplay_400Regular' }]}>Settings</Text>
+            <Text style={[styles.subtitle, { color: theme.textSecondary, fontFamily: 'Outfit_400Regular' }]}>{user?.email}</Text>
           </View>
-        </GlassSection>
 
-        {/* Change Email */}
-        <GlassSection title="Change Email">
-          <View style={styles.fieldWrap}>
-            <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>New email address</Text>
-            <View style={[styles.inputRow, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
-              <Ionicons name="mail-outline" size={16} color={theme.textMuted} style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, { color: theme.textPrimary }]}
-                value={newEmail}
-                onChangeText={setNewEmail}
-                placeholder={user?.email ?? 'Current email'}
-                placeholderTextColor={theme.textMuted}
-                keyboardType="email-address"
-                autoCapitalize="none"
+          {/* Appearance */}
+          <GlassSection title="Appearance">
+            <View style={styles.row}>
+              <Ionicons name={isDark ? 'moon-outline' : 'sunny-outline'} size={20} color={theme.primary} />
+              <Text style={[styles.rowLabel, { color: theme.textPrimary, fontFamily: 'Outfit_500Medium' }]}>Dark Mode</Text>
+              <Switch
+                value={isDark}
+                onValueChange={toggleTheme}
+                trackColor={{ false: theme.border, true: 'rgba(74,255,114,0.3)' }}
+                thumbColor={isDark ? theme.primary : theme.textMuted}
               />
             </View>
-          </View>
-          <RowDivider />
-          <TouchableOpacity
-            style={[styles.actionBtn, { opacity: (!newEmail.trim() || emailLoading) ? 0.5 : 1 }]}
-            onPress={handleChangeEmail}
-            disabled={!newEmail.trim() || emailLoading}
-            activeOpacity={0.7}
-          >
-            {emailLoading
-              ? <ActivityIndicator size="small" color={theme.primary} />
-              : <>
-                  <Ionicons name="checkmark-outline" size={18} color={theme.primary} />
-                  <Text style={[styles.actionBtnText, { color: theme.primary }]}>Update Email</Text>
-                </>
-            }
-          </TouchableOpacity>
-        </GlassSection>
+          </GlassSection>
 
-        {/* Change Password */}
-        <GlassSection title="Change Password">
-          <View style={styles.fieldWrap}>
-            <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>New password</Text>
-            <View style={[styles.inputRow, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
-              <Ionicons name="lock-closed-outline" size={16} color={theme.textMuted} style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, { color: theme.textPrimary, flex: 1 }]}
-                value={newPassword}
-                onChangeText={setNewPassword}
-                placeholder="Min. 6 characters"
-                placeholderTextColor={theme.textMuted}
-                secureTextEntry={!showNewPassword}
-              />
-              <TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)} style={styles.eyeBtn}>
-                <Ionicons name={showNewPassword ? 'eye-off-outline' : 'eye-outline'} size={16} color={theme.textMuted} />
-              </TouchableOpacity>
+          {/* Change Email */}
+          <GlassSection title="Change Email">
+            <View style={styles.fieldWrap}>
+              <Text style={[styles.fieldLabel, { color: theme.textSecondary, fontFamily: 'Outfit_500Medium' }]}>New email address</Text>
+              <View style={[styles.inputRow, { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.10)' }]}>
+                <Ionicons name="mail-outline" size={16} color={theme.textMuted} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, { color: theme.textPrimary, fontFamily: 'Outfit_400Regular' }]}
+                  value={newEmail}
+                  onChangeText={setNewEmail}
+                  placeholder={user?.email ?? 'Current email'}
+                  placeholderTextColor={theme.textMuted}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
             </View>
-          </View>
-          <View style={[styles.fieldWrap, { paddingTop: 0 }]}>
-            <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Confirm new password</Text>
-            <View style={[styles.inputRow, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
-              <Ionicons name="lock-closed-outline" size={16} color={theme.textMuted} style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, { color: theme.textPrimary }]}
-                value={confirmNewPassword}
-                onChangeText={setConfirmNewPassword}
-                placeholder="Repeat new password"
-                placeholderTextColor={theme.textMuted}
-                secureTextEntry={!showNewPassword}
-              />
+            <RowDivider />
+            <TouchableOpacity
+              style={[styles.actionBtn, { opacity: (!newEmail.trim() || emailLoading) ? 0.5 : 1 }]}
+              onPress={handleChangeEmail}
+              disabled={!newEmail.trim() || emailLoading}
+              activeOpacity={0.7}
+            >
+              {emailLoading
+                ? <ActivityIndicator size="small" color={theme.primary} />
+                : <>
+                    <Ionicons name="checkmark-outline" size={18} color={theme.primary} />
+                    <Text style={[styles.actionBtnText, { color: theme.primary, fontFamily: 'Outfit_600SemiBold' }]}>Update Email</Text>
+                  </>
+              }
+            </TouchableOpacity>
+          </GlassSection>
+
+          {/* Change Password */}
+          <GlassSection title="Change Password">
+            <View style={styles.fieldWrap}>
+              <Text style={[styles.fieldLabel, { color: theme.textSecondary, fontFamily: 'Outfit_500Medium' }]}>New password</Text>
+              <View style={[styles.inputRow, { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.10)' }]}>
+                <Ionicons name="lock-closed-outline" size={16} color={theme.textMuted} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, { color: theme.textPrimary, flex: 1, fontFamily: 'Outfit_400Regular' }]}
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  placeholder="Min. 6 characters"
+                  placeholderTextColor={theme.textMuted}
+                  secureTextEntry={!showNewPassword}
+                />
+                <TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)} style={styles.eyeBtn}>
+                  <Ionicons name={showNewPassword ? 'eye-off-outline' : 'eye-outline'} size={16} color={theme.textMuted} />
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-          <RowDivider />
-          <TouchableOpacity
-            style={[styles.actionBtn, { opacity: (!newPassword.trim() || passwordLoading) ? 0.5 : 1 }]}
-            onPress={handleChangePassword}
-            disabled={!newPassword.trim() || passwordLoading}
-            activeOpacity={0.7}
-          >
-            {passwordLoading
-              ? <ActivityIndicator size="small" color={theme.primary} />
-              : <>
-                  <Ionicons name="checkmark-outline" size={18} color={theme.primary} />
-                  <Text style={[styles.actionBtnText, { color: theme.primary }]}>Update Password</Text>
-                </>
-            }
-          </TouchableOpacity>
-        </GlassSection>
+            <View style={[styles.fieldWrap, { paddingTop: 0 }]}>
+              <Text style={[styles.fieldLabel, { color: theme.textSecondary, fontFamily: 'Outfit_500Medium' }]}>Confirm new password</Text>
+              <View style={[styles.inputRow, { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.10)' }]}>
+                <Ionicons name="lock-closed-outline" size={16} color={theme.textMuted} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, { color: theme.textPrimary, fontFamily: 'Outfit_400Regular' }]}
+                  value={confirmNewPassword}
+                  onChangeText={setConfirmNewPassword}
+                  placeholder="Repeat new password"
+                  placeholderTextColor={theme.textMuted}
+                  secureTextEntry={!showNewPassword}
+                />
+              </View>
+            </View>
+            <RowDivider />
+            <TouchableOpacity
+              style={[styles.actionBtn, { opacity: (!newPassword.trim() || passwordLoading) ? 0.5 : 1 }]}
+              onPress={handleChangePassword}
+              disabled={!newPassword.trim() || passwordLoading}
+              activeOpacity={0.7}
+            >
+              {passwordLoading
+                ? <ActivityIndicator size="small" color={theme.primary} />
+                : <>
+                    <Ionicons name="checkmark-outline" size={18} color={theme.primary} />
+                    <Text style={[styles.actionBtnText, { color: theme.primary, fontFamily: 'Outfit_600SemiBold' }]}>Update Password</Text>
+                  </>
+              }
+            </TouchableOpacity>
+          </GlassSection>
 
-        {/* About */}
-        <GlassSection title="About">
-          <View style={styles.row}>
-            <Ionicons name="information-circle-outline" size={20} color={theme.textSecondary} />
-            <Text style={[styles.rowLabel, { color: theme.textPrimary }]}>Version</Text>
-            <Text style={[styles.rowValue, { color: theme.textMuted }]}>1.0.0</Text>
-          </View>
-          <RowDivider />
-          <View style={styles.row}>
-            <Ionicons name="sparkles-outline" size={20} color={theme.textSecondary} />
-            <Text style={[styles.rowLabel, { color: theme.textPrimary }]}>AI Engine</Text>
-            <Text style={[styles.rowValue, { color: theme.textMuted }]}>GPT-4 Vision</Text>
-          </View>
-          <RowDivider />
-          <View style={styles.row}>
-            <Ionicons name="server-outline" size={20} color={theme.textSecondary} />
-            <Text style={[styles.rowLabel, { color: theme.textPrimary }]}>Backend</Text>
-            <Text style={[styles.rowValue, { color: theme.textMuted }]}>Supabase</Text>
-          </View>
-        </GlassSection>
+          {/* About */}
+          <GlassSection title="About">
+            <View style={styles.row}>
+              <Ionicons name="information-circle-outline" size={20} color={theme.textSecondary} />
+              <Text style={[styles.rowLabel, { color: theme.textPrimary, fontFamily: 'Outfit_500Medium' }]}>Version</Text>
+              <Text style={[styles.rowValue, { color: theme.textMuted, fontFamily: 'Outfit_400Regular' }]}>1.0.0</Text>
+            </View>
+            <RowDivider />
+            <View style={styles.row}>
+              <Ionicons name="sparkles-outline" size={20} color={theme.textSecondary} />
+              <Text style={[styles.rowLabel, { color: theme.textPrimary, fontFamily: 'Outfit_500Medium' }]}>AI Engine</Text>
+              <Text style={[styles.rowValue, { color: theme.textMuted, fontFamily: 'Outfit_400Regular' }]}>GPT-4 Vision</Text>
+            </View>
+            <RowDivider />
+            <View style={styles.row}>
+              <Ionicons name="server-outline" size={20} color={theme.textSecondary} />
+              <Text style={[styles.rowLabel, { color: theme.textPrimary, fontFamily: 'Outfit_500Medium' }]}>Backend</Text>
+              <Text style={[styles.rowValue, { color: theme.textMuted, fontFamily: 'Outfit_400Regular' }]}>Supabase</Text>
+            </View>
+          </GlassSection>
 
-        {/* Danger zone */}
-        <GlassSection title="Account">
-          <TouchableOpacity style={styles.row} onPress={handleSignOut} activeOpacity={0.7}>
-            <Ionicons name="log-out-outline" size={20} color={theme.error} />
-            <Text style={[styles.rowLabel, { color: theme.error }]}>Sign Out</Text>
-            <Ionicons name="chevron-forward" size={16} color={theme.error} />
-          </TouchableOpacity>
-        </GlassSection>
-      </ScrollView>
-    </SafeAreaView>
+          {/* Danger zone */}
+          <GlassSection title="Account">
+            <TouchableOpacity style={styles.row} onPress={handleSignOut} activeOpacity={0.7}>
+              <Ionicons name="log-out-outline" size={20} color={theme.error} />
+              <Text style={[styles.rowLabel, { color: theme.error, fontFamily: 'Outfit_500Medium' }]}>Sign Out</Text>
+              <Ionicons name="chevron-forward" size={16} color={theme.error} />
+            </TouchableOpacity>
+          </GlassSection>
+        </ScrollView>
+      </SafeAreaView>
+    </SceneBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16 },
-  title: { fontSize: 28, fontWeight: '700', letterSpacing: -0.5 },
+  title: { fontSize: 32, letterSpacing: -0.5 },
   subtitle: { fontSize: 14, marginTop: 4 },
   section: { paddingHorizontal: 16, marginBottom: 20 },
   sectionLabel: {
     fontSize: 11, fontWeight: '700', textTransform: 'uppercase',
-    letterSpacing: 1, marginBottom: 10, paddingHorizontal: 4,
+    letterSpacing: 2, marginBottom: 10, paddingHorizontal: 4, opacity: 0.35,
   },
-  card: { borderRadius: 18, overflow: 'hidden', borderWidth: 1 },
-  cardInner: { borderRadius: 18 },
   row: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     paddingHorizontal: 16, paddingVertical: 14,
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   rowValue: { fontSize: 14 },
   divider: { height: 1, marginHorizontal: 16 },
   fieldWrap: { paddingHorizontal: 16, paddingVertical: 14, gap: 8 },
-  fieldLabel: { fontSize: 13, fontWeight: '500' },
+  fieldLabel: { fontSize: 13 },
   inputRow: {
     flexDirection: 'row', alignItems: 'center',
     borderRadius: 12, borderWidth: 1, paddingHorizontal: 12, height: 46,
@@ -246,5 +246,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: 8, paddingVertical: 14, paddingHorizontal: 16,
   },
-  actionBtnText: { fontSize: 15, fontWeight: '600' },
+  actionBtnText: { fontSize: 15 },
 });

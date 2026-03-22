@@ -6,6 +6,9 @@ import { View, ActivityIndicator } from 'react-native';
 import { ThemeProvider, useTheme } from '../context/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setupNotifications, scheduleDailyPaceCheck } from '../lib/notifications';
+import { useFonts } from 'expo-font';
+import { Outfit_400Regular, Outfit_500Medium, Outfit_600SemiBold, Outfit_700Bold } from '@expo-google-fonts/outfit';
+import { DMSerifDisplay_400Regular } from '@expo-google-fonts/dm-serif-display';
 
 function RootLayoutInner() {
   const { session, loading, user } = useAuth();
@@ -88,6 +91,14 @@ function RootLayoutInner() {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    Outfit_400Regular,
+    Outfit_500Medium,
+    Outfit_600SemiBold,
+    Outfit_700Bold,
+    DMSerifDisplay_400Regular,
+  });
+  // still render ThemeProvider even if fonts not loaded
   return (
     <ThemeProvider>
       <RootLayoutInner />

@@ -7,6 +7,8 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../context/ThemeContext';
 import { supabase } from '../../lib/supabase';
+import SceneBackground from '../../components/SceneBackground';
+import GlassCard from '../../components/GlassCard';
 import type { Database } from '../../lib/supabase';
 
 type Task = Database['public']['Tables']['tasks']['Row'];
@@ -68,95 +70,96 @@ export default function ProfileScreen() {
   const bestDay = getBestDay(tasks);
   const dna = getSubmissionDNA(submissions);
 
-  const GlassCard = ({ children }: { children: React.ReactNode }) => (
-    <View style={[styles.card, { borderColor: theme.border }]}>
-      <View style={[styles.cardInner, { backgroundColor: theme.surface }]}>{children}</View>
-    </View>
-  );
-
   const StatRow = ({ icon, label, value, color }: { icon: any; label: string; value: string; color?: string }) => (
     <View style={[styles.statRow, { borderTopColor: theme.border }]}>
       <Ionicons name={icon} size={18} color={color ?? theme.primary} />
-      <Text style={[styles.statLabel, { color: theme.textSecondary }]}>{label}</Text>
-      <Text style={[styles.statValue, { color: color ?? theme.textPrimary }]}>{value}</Text>
+      <Text style={[styles.statLabel, { color: theme.textSecondary, fontFamily: 'Outfit_500Medium' }]}>{label}</Text>
+      <Text style={[styles.statValue, { color: color ?? theme.textPrimary, fontFamily: 'Outfit_700Bold' }]}>{value}</Text>
     </View>
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.textPrimary }]}>Profile</Text>
-        </View>
+    <SceneBackground>
+      <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top']}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 140 }}>
+          <View style={styles.header}>
+            <Text style={[styles.title, { color: theme.textPrimary, fontFamily: 'DMSerifDisplay_400Regular' }]}>Profile</Text>
+          </View>
 
-        {/* Avatar card */}
-        <View style={styles.section}>
-          <GlassCard>
-            <View style={styles.avatarWrap}>
-              <View style={[styles.avatar, { backgroundColor: theme.primaryMuted, borderColor: theme.primary }]}>
-                <Text style={[styles.avatarText, { color: theme.primary }]}>{initials}</Text>
+          {/* Avatar card */}
+          <View style={styles.section}>
+            <GlassCard>
+              <View style={styles.avatarWrap}>
+                <View style={[styles.avatar, {
+                  backgroundColor: '#4AFF72',
+                  borderColor: theme.primary,
+                  shadowColor: '#4AFF72',
+                  shadowOffset: { width: 0, height: 0 },
+                  shadowRadius: 24,
+                  shadowOpacity: 0.45,
+                }]}>
+                  <Text style={[styles.avatarText, { color: '#060d0a' }]}>{initials}</Text>
+                </View>
+                <Text style={[styles.email, { color: theme.textPrimary, fontFamily: 'Outfit_600SemiBold' }]}>{email}</Text>
+                <Text style={[styles.memberSince, { color: theme.textSecondary, fontFamily: 'Outfit_400Regular' }]}>Member since {memberSince}</Text>
               </View>
-              <Text style={[styles.email, { color: theme.textPrimary }]}>{email}</Text>
-              <Text style={[styles.memberSince, { color: theme.textSecondary }]}>Member since {memberSince}</Text>
-            </View>
-          </GlassCard>
-        </View>
+            </GlassCard>
+          </View>
 
-        {/* Feature 9: Weekly Recap link */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>Highlights</Text>
-          <GlassCard>
-            <TouchableOpacity
-              style={[styles.statRow, { borderTopWidth: 0 }]}
-              onPress={() => router.push('/recap')}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="trophy-outline" size={18} color={theme.primary} />
-              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Weekly Recap</Text>
-              <Text style={[styles.statValue, { color: theme.primary }]}>View →</Text>
-            </TouchableOpacity>
-          </GlassCard>
-        </View>
+          {/* Feature 9: Weekly Recap link */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionLabel, { color: theme.textMuted, fontFamily: 'Outfit_600SemiBold' }]}>Highlights</Text>
+            <GlassCard>
+              <TouchableOpacity
+                style={[styles.statRow, { borderTopWidth: 0 }]}
+                onPress={() => router.push('/recap')}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="trophy-outline" size={18} color={theme.primary} />
+                <Text style={[styles.statLabel, { color: theme.textSecondary, fontFamily: 'Outfit_500Medium' }]}>Weekly Recap</Text>
+                <Text style={[styles.statValue, { color: theme.primary, fontFamily: 'Outfit_700Bold' }]}>View →</Text>
+              </TouchableOpacity>
+            </GlassCard>
+          </View>
 
-        {/* Stats insights */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>Your Stats</Text>
-          <GlassCard>
-            {lifetimeRate !== null && (
-              <StatRow icon="trophy-outline" label="Lifetime success rate" value={`${lifetimeRate}%`} color={lifetimeRate >= 70 ? theme.success : lifetimeRate >= 40 ? theme.warning : theme.error} />
-            )}
-            <StatRow icon="checkmark-circle-outline" label="Tasks completed" value={`${completed}`} color={theme.success} />
-            <StatRow icon="close-circle-outline" label="Tasks failed" value={`${failed}`} color={theme.error} />
-            {bestDay && (
-              <StatRow icon="flash-outline" label="Most productive day" value={bestDay} />
-            )}
-            {dna && (
-              <StatRow icon="sparkles-outline" label="Preferred proof style" value={dna} />
-            )}
-          </GlassCard>
-        </View>
+          {/* Stats insights */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionLabel, { color: theme.textMuted, fontFamily: 'Outfit_600SemiBold' }]}>Your Stats</Text>
+            <GlassCard>
+              {lifetimeRate !== null && (
+                <StatRow icon="trophy-outline" label="Lifetime success rate" value={`${lifetimeRate}%`} color={lifetimeRate >= 70 ? theme.success : lifetimeRate >= 40 ? theme.warning : theme.error} />
+              )}
+              <StatRow icon="checkmark-circle-outline" label="Tasks completed" value={`${completed}`} color={theme.success} />
+              <StatRow icon="close-circle-outline" label="Tasks failed" value={`${failed}`} color={theme.error} />
+              {bestDay && (
+                <StatRow icon="flash-outline" label="Most productive day" value={bestDay} />
+              )}
+              {dna && (
+                <StatRow icon="sparkles-outline" label="Preferred proof style" value={dna} />
+              )}
+            </GlassCard>
+          </View>
 
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: theme.textMuted }]}>Accountability Buddy v1.0</Text>
-          <Text style={[styles.footerSub, { color: theme.textMuted }]}>Powered by GPT-4 Vision & Supabase</Text>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={[styles.footerText, { color: theme.textMuted, fontFamily: 'Outfit_400Regular' }]}>Accountability Buddy v1.0</Text>
+            <Text style={[styles.footerSub, { color: theme.textMuted, fontFamily: 'Outfit_400Regular' }]}>Powered by GPT-4 Vision & Supabase</Text>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </SceneBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 },
-  title: { fontSize: 28, fontWeight: '700', letterSpacing: -0.5 },
+  title: { fontSize: 32, letterSpacing: -0.5 },
   section: { paddingHorizontal: 16, marginBottom: 20 },
   sectionLabel: {
-    fontSize: 11, fontWeight: '700', textTransform: 'uppercase',
-    letterSpacing: 1, marginBottom: 10, paddingHorizontal: 4,
+    fontSize: 11, textTransform: 'uppercase',
+    letterSpacing: 2, marginBottom: 10, paddingHorizontal: 4,
   },
-  card: { borderRadius: 18, overflow: 'hidden', borderWidth: 1 },
-  cardInner: { borderRadius: 18 },
   avatarWrap: { alignItems: 'center', paddingVertical: 28, paddingHorizontal: 20 },
   avatar: {
     width: 76, height: 76, borderRadius: 38,
@@ -164,14 +167,14 @@ const styles = StyleSheet.create({
     borderWidth: 2, marginBottom: 14,
   },
   avatarText: { fontSize: 30, fontWeight: '700' },
-  email: { fontSize: 17, fontWeight: '600', marginBottom: 4 },
+  email: { fontSize: 17, marginBottom: 4 },
   memberSince: { fontSize: 13 },
   statRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: 1,
   },
   statLabel: { flex: 1, fontSize: 14 },
-  statValue: { fontSize: 14, fontWeight: '700' },
+  statValue: { fontSize: 14 },
   footer: { alignItems: 'center', paddingTop: 8 },
   footerText: { fontSize: 13 },
   footerSub: { fontSize: 11, marginTop: 4 },

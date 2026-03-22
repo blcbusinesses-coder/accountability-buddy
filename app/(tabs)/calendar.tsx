@@ -8,6 +8,8 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../context/ThemeContext';
 import TaskCard from '../../components/TaskCard';
+import SceneBackground from '../../components/SceneBackground';
+import GlassCard from '../../components/GlassCard';
 import type { Database } from '../../lib/supabase';
 
 type Task = Database['public']['Tables']['tasks']['Row'];
@@ -64,77 +66,79 @@ export default function CalendarScreen() {
   const tasksOnDate = tasks.filter((t) => t.due_date === selectedDate);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.textPrimary }]}>Calendar</Text>
-      </View>
+    <SceneBackground>
+      <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top']}>
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: theme.textPrimary, fontFamily: 'DMSerifDisplay_400Regular', fontSize: 32 }]}>Calendar</Text>
+        </View>
 
-      <View style={[styles.calendarWrap, { borderColor: theme.border }]}>
-        <Calendar
-          current={selectedDate}
-          onDayPress={(day: { dateString: string }) => setSelectedDate(day.dateString)}
-          markedDates={markedDates}
-          markingType="multi-dot"
-          theme={{
-            backgroundColor: 'transparent',
-            calendarBackground: 'transparent',
-            textSectionTitleColor: theme.textSecondary,
-            selectedDayBackgroundColor: theme.primary,
-            selectedDayTextColor: '#000',
-            todayTextColor: theme.primary,
-            dayTextColor: theme.textPrimary,
-            textDisabledColor: theme.textMuted,
-            dotColor: theme.primary,
-            selectedDotColor: '#000',
-            arrowColor: theme.primary,
-            monthTextColor: theme.textPrimary,
-            indicatorColor: theme.primary,
-            textDayFontWeight: '500',
-            textMonthFontWeight: '700',
-            textDayHeaderFontWeight: '600',
-            textDayFontSize: 14,
-            textMonthFontSize: 16,
-            textDayHeaderFontSize: 12,
-          }}
-        />
-      </View>
-
-      <View style={styles.daySection}>
-        <Text style={[styles.dayTitle, { color: theme.textSecondary }]}>
-          {new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-US', {
-            weekday: 'long', month: 'long', day: 'numeric',
-          })}
-        </Text>
-
-        {loading ? (
-          <ActivityIndicator color={theme.primary} style={{ marginTop: 20 }} />
-        ) : tasksOnDate.length === 0 ? (
-          <View style={styles.empty}>
-            <Text style={[styles.emptyText, { color: theme.textMuted }]}>No tasks due on this day</Text>
-          </View>
-        ) : (
-          <FlatList
-            data={tasksOnDate}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <TaskCard task={item} onPress={() => router.push(`/task/${item.id}`)} />
-            )}
-            contentContainerStyle={{ paddingBottom: 120 }}
-            showsVerticalScrollIndicator={false}
+        <GlassCard style={styles.calendarWrap}>
+          <Calendar
+            current={selectedDate}
+            onDayPress={(day: { dateString: string }) => setSelectedDate(day.dateString)}
+            markedDates={markedDates}
+            markingType="multi-dot"
+            theme={{
+              backgroundColor: 'transparent',
+              calendarBackground: 'transparent',
+              textSectionTitleColor: theme.textSecondary,
+              selectedDayBackgroundColor: theme.primary,
+              selectedDayTextColor: '#000',
+              todayTextColor: '#4AFF72',
+              todayBackgroundColor: 'rgba(74,255,114,0.15)',
+              dayTextColor: theme.textPrimary,
+              textDisabledColor: theme.textMuted,
+              dotColor: theme.primary,
+              selectedDotColor: '#000',
+              arrowColor: theme.primary,
+              monthTextColor: theme.textPrimary,
+              indicatorColor: theme.primary,
+              textDayFontWeight: '500',
+              textMonthFontWeight: '700',
+              textDayHeaderFontWeight: '600',
+              textDayFontSize: 14,
+              textMonthFontSize: 16,
+              textDayHeaderFontSize: 12,
+            }}
           />
-        )}
-      </View>
-    </SafeAreaView>
+        </GlassCard>
+
+        <View style={styles.daySection}>
+          <Text style={[styles.dayTitle, { color: theme.textSecondary }]}>
+            {new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-US', {
+              weekday: 'long', month: 'long', day: 'numeric',
+            })}
+          </Text>
+
+          {loading ? (
+            <ActivityIndicator color={theme.primary} style={{ marginTop: 20 }} />
+          ) : tasksOnDate.length === 0 ? (
+            <View style={styles.empty}>
+              <Text style={[styles.emptyText, { color: theme.textMuted }]}>No tasks due on this day</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={tasksOnDate}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <TaskCard task={item} onPress={() => router.push(`/task/${item.id}`)} />
+              )}
+              contentContainerStyle={{ paddingBottom: 140 }}
+              showsVerticalScrollIndicator={false}
+            />
+          )}
+        </View>
+      </SafeAreaView>
+    </SceneBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 },
-  title: { fontSize: 28, fontWeight: '700', letterSpacing: -0.5 },
+  title: { letterSpacing: -0.5 },
   calendarWrap: {
     marginHorizontal: 16, marginBottom: 12,
-    borderRadius: 18, overflow: 'hidden', borderWidth: 1,
   },
   daySection: { flex: 1, paddingTop: 4 },
   dayTitle: { fontSize: 14, fontWeight: '600', marginBottom: 10, paddingHorizontal: 16 },

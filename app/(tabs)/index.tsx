@@ -14,6 +14,8 @@ import TaskCard from '../../components/TaskCard';
 import ProductivityBattery from '../../components/ProductivityBattery';
 import StreakBadge from '../../components/StreakBadge';
 import SocialProofDrip from '../../components/SocialProofDrip';
+import SceneBackground from '../../components/SceneBackground';
+import GlassCard from '../../components/GlassCard';
 import type { Database } from '../../lib/supabase';
 
 type Task = Database['public']['Tables']['tasks']['Row'];
@@ -91,10 +93,16 @@ export default function TasksScreen() {
         style={[
           styles.pill,
           { borderColor: active ? theme.primary : theme.border },
-          active && { backgroundColor: theme.primaryMuted },
+          active && {
+            backgroundColor: theme.primaryMuted,
+            shadowColor: '#4AFF72',
+            shadowRadius: 8,
+            shadowOpacity: 0.3,
+            shadowOffset: { width: 0, height: 0 },
+          },
         ]}
       >
-        <Text style={[styles.pillText, { color: active ? theme.primary : theme.textSecondary }]}>
+        <Text style={[styles.pillText, { color: active ? theme.primary : theme.textSecondary, fontFamily: 'Outfit_600SemiBold' }]}>
           {label}
         </Text>
       </TouchableOpacity>
@@ -102,85 +110,90 @@ export default function TasksScreen() {
   };
 
   const StatCard = ({
-    value, label, color,
-  }: { value: number; label: string; color: string }) => (
-    <View style={[styles.statCard, { borderColor: theme.border }]}>
-      <View style={[styles.statCardInner, { backgroundColor: theme.surface }]}>
-        <Text style={[styles.statNum, { color }]}>{value}</Text>
-        <Text style={[styles.statLabel, { color: theme.textMuted }]}>{label}</Text>
+    value, label, color, tint,
+  }: { value: number; label: string; color: string; tint?: 'green' | 'red' | 'neutral' }) => (
+    <GlassCard tint={tint ?? 'neutral'} style={styles.statCardGlass}>
+      <View style={styles.statCardInner}>
+        <Text style={[styles.statNum, { color, fontFamily: 'Outfit_700Bold' }]}>{value}</Text>
+        <Text style={[styles.statLabel, { color: theme.textMuted, fontFamily: 'Outfit_500Medium' }]}>{label}</Text>
       </View>
-    </View>
+    </GlassCard>
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={[styles.title, { color: theme.textPrimary }]}>My Tasks</Text>
-          <StreakBadge tasks={allTasks} />
+    <SceneBackground>
+      <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]} edges={['top']}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <Text style={[styles.title, { color: theme.textPrimary, fontFamily: 'DMSerifDisplay_400Regular', fontSize: 32 }]}>My Tasks</Text>
+            <StreakBadge tasks={allTasks} />
+          </View>
+          <View style={styles.headerRight}>
+            {allTasks.length > 0 && <ProductivityBattery tasks={allTasks} />}
+            <TouchableOpacity
+              style={[styles.addBtn, { backgroundColor: theme.primary, shadowColor: '#4AFF72', shadowOffset: { width: 0, height: 0 }, shadowRadius: 20, shadowOpacity: 0.5, elevation: 8 }]}
+              onPress={() => router.push('/task/create')}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="add" size={24} color="#000" />
+            </TouchableOpacity>
+          </View>
         </View>
-        <View style={styles.headerRight}>
-          {allTasks.length > 0 && <ProductivityBattery tasks={allTasks} />}
-          <TouchableOpacity
-            style={[styles.addBtn, { backgroundColor: theme.primary }]}
-            onPress={() => router.push('/task/create')}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="add" size={24} color="#000" />
-          </TouchableOpacity>
+
+        {/* Feature 7: Social Proof Drip */}
+        <SocialProofDrip />
+
+        {/* Stats */}
+        <View style={styles.statsRow}>
+          <StatCard value={stats.total} label="Total" color={theme.textPrimary} />
+          <StatCard value={stats.completed} label="Done" color={theme.success} tint="green" />
+          <StatCard value={stats.pending} label="Pending" color={theme.primary} />
+          <StatCard value={stats.failed} label="Failed" color={theme.error} tint="red" />
         </View>
-      </View>
 
-      {/* Feature 7: Social Proof Drip */}
-      <SocialProofDrip />
-
-      {/* Stats */}
-      <View style={styles.statsRow}>
-        <StatCard value={stats.total} label="Total" color={theme.textPrimary} />
-        <StatCard value={stats.completed} label="Done" color={theme.success} />
-        <StatCard value={stats.pending} label="Pending" color={theme.primary} />
-        <StatCard value={stats.failed} label="Failed" color={theme.error} />
-      </View>
-
-      {/* Feature 8: Productivity Battery (vertical, in header row handled below) */}
-
-      {/* Filter pills */}
-      <View style={styles.filterRow}>
-        <FilterPill type="all" label="All" />
-        <FilterPill type="pending" label="Pending" />
-        <FilterPill type="completed" label="Done" />
-        <FilterPill type="failed" label="Failed" />
-      </View>
-
-      {loading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator color={theme.primary} size="large" />
+        {/* Filter pills */}
+        <View style={styles.filterRow}>
+          <FilterPill type="all" label="All" />
+          <FilterPill type="pending" label="Pending" />
+          <FilterPill type="completed" label="Done" />
+          <FilterPill type="failed" label="Failed" />
         </View>
-      ) : (
-        <FlatList
-          data={filteredTasks}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <TaskCard task={item} onPress={() => router.push(`/task/${item.id}`)} />
-          )}
-          contentContainerStyle={styles.listContent}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchTasks(); }} tintColor={theme.primary} />
-          }
-          ListEmptyComponent={
-            <View style={styles.empty}>
-              <Ionicons name="checkmark-done-circle-outline" size={56} color={theme.textMuted} />
-              <Text style={[styles.emptyTitle, { color: theme.textSecondary }]}>No tasks yet</Text>
-              <Text style={[styles.emptyText, { color: theme.textMuted }]}>
-                Tap + to create your first task
-              </Text>
-            </View>
-          }
-          showsVerticalScrollIndicator={false}
-        />
-      )}
-    </SafeAreaView>
+
+        {loading ? (
+          <View style={styles.centered}>
+            <ActivityIndicator color={theme.primary} size="large" />
+          </View>
+        ) : (
+          <FlatList
+            data={filteredTasks}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <TaskCard task={item} onPress={() => router.push(`/task/${item.id}`)} />
+            )}
+            contentContainerStyle={styles.listContent}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchTasks(); }} tintColor={theme.primary} />
+            }
+            ListEmptyComponent={
+              <View style={styles.empty}>
+                <Ionicons
+                  name="checkmark-done-circle-outline"
+                  size={56}
+                  color={theme.textMuted}
+                  style={{ shadowColor: '#4AFF72', shadowRadius: 16, shadowOpacity: 0.4, shadowOffset: { width: 0, height: 0 } }}
+                />
+                <Text style={[styles.emptyTitle, { color: theme.textSecondary, fontFamily: 'Outfit_600SemiBold' }]}>No tasks yet</Text>
+                <Text style={[styles.emptyText, { color: theme.textMuted, fontFamily: 'Outfit_500Medium' }]}>
+                  Tap + to create your first task
+                </Text>
+              </View>
+            }
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+      </SafeAreaView>
+    </SceneBackground>
   );
 }
 
@@ -192,27 +205,25 @@ const styles = StyleSheet.create({
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  title: { fontSize: 28, fontWeight: '700', letterSpacing: -0.5 },
+  title: { letterSpacing: -0.5 },
   addBtn: {
     width: 44, height: 44, borderRadius: 13,
     justifyContent: 'center', alignItems: 'center',
   },
   statsRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingBottom: 12 },
-  statCard: {
-    flex: 1, borderRadius: 14, overflow: 'hidden', borderWidth: 1,
-  },
-  statCardInner: { padding: 10, alignItems: 'center' },
-  statNum: { fontSize: 20, fontWeight: '800', letterSpacing: -0.5 },
-  statLabel: { fontSize: 10, fontWeight: '500', marginTop: 2 },
+  statCardGlass: { flex: 1 },
+  statCardInner: { padding: 12, alignItems: 'center' },
+  statNum: { fontSize: 20, letterSpacing: -0.5 },
+  statLabel: { fontSize: 10, marginTop: 2 },
   filterRow: { flexDirection: 'row', paddingHorizontal: 16, paddingBottom: 10, gap: 8 },
   pill: {
-    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20,
+    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 50,
     borderWidth: 1,
   },
-  pillText: { fontSize: 13, fontWeight: '600' },
-  listContent: { paddingTop: 4, paddingBottom: 120 },
+  pillText: { fontSize: 13 },
+  listContent: { paddingTop: 4, paddingBottom: 140 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 8 },
-  emptyTitle: { fontSize: 18, fontWeight: '600' },
+  emptyTitle: { fontSize: 18 },
   emptyText: { fontSize: 14, textAlign: 'center', paddingHorizontal: 24 },
 });

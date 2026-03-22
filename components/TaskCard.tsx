@@ -36,27 +36,41 @@ function getStatusConfig(task: Task) {
     new Date(`${task.due_date}T${task.due_time}`) < new Date();
 
   if (isOverdue) {
-    return { icon: 'alert-circle' as const, color: '#FFD60A', bg: 'rgba(255,214,10,0.12)' };
+    return { icon: 'alert-circle' as const, color: '#FFD60A', bg: 'rgba(255,214,10,0.12)', glow: false };
   }
   switch (task.status) {
     case 'completed':
-      return { icon: 'checkmark-circle' as const, color: '#00E5A0', bg: 'rgba(0,229,160,0.12)' };
+      return { icon: 'checkmark-circle' as const, color: '#00E5A0', bg: 'rgba(0,229,160,0.12)', glow: true };
     case 'failed':
-      return { icon: 'close-circle' as const, color: '#FF453A', bg: 'rgba(255,69,58,0.12)' };
+      return { icon: 'close-circle' as const, color: '#FF453A', bg: 'rgba(255,69,58,0.12)', glow: false };
     default:
-      return { icon: 'time-outline' as const, color: '#00E5A0', bg: 'rgba(0,229,160,0.10)' };
+      return { icon: 'time-outline' as const, color: '#00E5A0', bg: 'rgba(0,229,160,0.10)', glow: false };
   }
 }
 
 export default function TaskCard({ task, onPress }: TaskCardProps) {
   const { theme } = useTheme();
-  const { icon, color, bg } = getStatusConfig(task);
+  const { icon, color, bg, glow } = getStatusConfig(task);
   const dimmed = task.status === 'completed' || task.status === 'failed';
 
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={styles.wrapper}>
-      <View style={[styles.inner, { borderColor: theme.border, backgroundColor: theme.card }]}>
-        <View style={[styles.iconWrap, { backgroundColor: bg }]}>
+      <View style={[styles.inner, {
+        borderColor: 'rgba(255,255,255,0.10)',
+        backgroundColor: 'rgba(255,255,255,0.055)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+      }]}>
+        <View style={[styles.iconWrap, { backgroundColor: bg },
+          glow ? {
+            shadowColor: '#4AFF72',
+            shadowRadius: 8,
+            shadowOpacity: 0.4,
+            shadowOffset: { width: 0, height: 0 },
+          } : null,
+        ]}>
           <Ionicons name={icon} size={20} color={color} />
         </View>
 
@@ -88,7 +102,7 @@ export default function TaskCard({ task, onPress }: TaskCardProps) {
 
 const styles = StyleSheet.create({
   wrapper: {
-    borderRadius: 16,
+    borderRadius: 20,
     overflow: 'hidden',
     marginHorizontal: 16,
     marginBottom: 10,
@@ -97,7 +111,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 14,
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
   },
   iconWrap: {

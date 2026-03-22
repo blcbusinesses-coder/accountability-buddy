@@ -35,24 +35,24 @@ export const darkTheme = {
   isDark: true,
 
   // Backgrounds
-  background: '#080808',
-  backgroundGradientStart: '#0a0a0f',
-  backgroundGradientEnd: '#080808',
+  background: '#060d0a',
+  backgroundGradientStart: '#060d0a',
+  backgroundGradientEnd: '#060d0a',
 
   // Glass surfaces
-  surface: 'rgba(255,255,255,0.05)',
+  surface: 'rgba(255,255,255,0.055)',
   surfaceElevated: 'rgba(255,255,255,0.08)',
   surfaceStrong: 'rgba(255,255,255,0.12)',
-  card: 'rgba(255,255,255,0.05)',
+  card: 'rgba(255,255,255,0.055)',
 
   // Borders
-  border: 'rgba(255,255,255,0.08)',
+  border: 'rgba(255,255,255,0.10)',
   borderStrong: 'rgba(255,255,255,0.15)',
 
   // Accent (electric mint)
-  primary: '#00E5A0',
+  primary: '#4AFF72',
   primaryLight: '#33EDAF',
-  primaryMuted: 'rgba(0,229,160,0.12)',
+  primaryMuted: 'rgba(74,255,114,0.12)',
   primaryGlow: 'rgba(0,229,160,0.25)',
 
   // Text
@@ -69,9 +69,9 @@ export const darkTheme = {
   warningMuted: 'rgba(255,214,10,0.12)',
 
   // Tab bar
-  tabBar: 'rgba(8,8,8,0.92)',
+  tabBar: 'rgba(6,13,10,0.82)',
   tabBarBorder: 'rgba(255,255,255,0.08)',
-  tabActive: '#00E5A0',
+  tabActive: '#4AFF72',
   tabInactive: 'rgba(255,255,255,0.3)',
 
   // Blur

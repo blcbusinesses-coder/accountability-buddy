@@ -5,10 +5,11 @@ import {
 } from 'react-native';
 import { Link } from 'expo-router';
 
-import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
+import SceneBackground from '../../components/SceneBackground';
+import GlassCard from '../../components/GlassCard';
 
 export default function LoginScreen() {
   const { theme } = useTheme();
@@ -29,10 +30,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <LinearGradient
-      colors={[theme.backgroundGradientStart, theme.backgroundGradientEnd]}
-      style={styles.gradient}
-    >
+    <SceneBackground>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
           contentContainerStyle={styles.scroll}
@@ -41,25 +39,32 @@ export default function LoginScreen() {
         >
           {/* Logo */}
           <View style={styles.logoWrap}>
-            <View style={[styles.logoCircle, { backgroundColor: theme.primaryMuted, borderColor: theme.border }]}>
+            <View style={[styles.logoCircle, {
+              backgroundColor: theme.primaryMuted,
+              borderColor: theme.border,
+              shadowColor: '#4AFF72',
+              shadowRadius: 16,
+              shadowOpacity: 0.3,
+              shadowOffset: { width: 0, height: 0 },
+            }]}>
               <Ionicons name="checkmark-circle" size={40} color={theme.primary} />
             </View>
-            <Text style={[styles.appName, { color: theme.textPrimary }]}>Accountability Buddy</Text>
-            <Text style={[styles.tagline, { color: theme.textSecondary }]}>Get things done. For real.</Text>
+            <Text style={[styles.appName, { color: theme.textPrimary, fontFamily: 'DMSerifDisplay_400Regular', fontSize: 28 }]}>Accountability Buddy</Text>
+            <Text style={[styles.tagline, { color: theme.textSecondary, fontFamily: 'Outfit_400Regular' }]}>Get things done. For real.</Text>
           </View>
 
           {/* Glass card */}
-          <View style={[styles.card, { borderColor: theme.borderStrong }]}>
-            <View style={[styles.cardInner, { backgroundColor: theme.surface }]}>
-              <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Welcome back</Text>
+          <GlassCard>
+            <View style={styles.cardInner}>
+              <Text style={[styles.cardTitle, { color: theme.textPrimary, fontFamily: 'Outfit_600SemiBold' }]}>Welcome back</Text>
 
               {/* Email */}
               <View style={styles.field}>
-                <Text style={[styles.label, { color: theme.textSecondary }]}>Email</Text>
-                <View style={[styles.inputRow, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
+                <Text style={[styles.label, { color: theme.textSecondary, fontFamily: 'Outfit_500Medium' }]}>Email</Text>
+                <View style={[styles.inputRow, { backgroundColor: 'rgba(255,255,255,0.06)', borderColor: theme.border }]}>
                   <Ionicons name="mail-outline" size={17} color={theme.textMuted} style={styles.inputIcon} />
                   <TextInput
-                    style={[styles.input, { color: theme.textPrimary }]}
+                    style={[styles.input, { color: theme.textPrimary, fontFamily: 'Outfit_400Regular' }]}
                     value={email}
                     onChangeText={setEmail}
                     placeholder="you@example.com"
@@ -73,11 +78,11 @@ export default function LoginScreen() {
 
               {/* Password */}
               <View style={styles.field}>
-                <Text style={[styles.label, { color: theme.textSecondary }]}>Password</Text>
-                <View style={[styles.inputRow, { backgroundColor: theme.surfaceElevated, borderColor: theme.border }]}>
+                <Text style={[styles.label, { color: theme.textSecondary, fontFamily: 'Outfit_500Medium' }]}>Password</Text>
+                <View style={[styles.inputRow, { backgroundColor: 'rgba(255,255,255,0.06)', borderColor: theme.border }]}>
                   <Ionicons name="lock-closed-outline" size={17} color={theme.textMuted} style={styles.inputIcon} />
                   <TextInput
-                    style={[styles.input, { color: theme.textPrimary, flex: 1 }]}
+                    style={[styles.input, { color: theme.textPrimary, flex: 1, fontFamily: 'Outfit_400Regular' }]}
                     value={password}
                     onChangeText={setPassword}
                     placeholder="••••••••"
@@ -93,35 +98,40 @@ export default function LoginScreen() {
 
               {/* Sign in button */}
               <TouchableOpacity
-                style={[styles.btn, { backgroundColor: theme.primary }, loading && styles.btnDisabled]}
+                style={[styles.btn, {
+                  backgroundColor: theme.primary,
+                  shadowColor: '#4AFF72',
+                  shadowOffset: { width: 0, height: 0 },
+                  shadowRadius: 20,
+                  shadowOpacity: 0.45,
+                }, loading && styles.btnDisabled]}
                 onPress={handleLogin}
                 disabled={loading}
                 activeOpacity={0.8}
               >
                 {loading
                   ? <ActivityIndicator color="#000" />
-                  : <Text style={styles.btnText}>Sign In</Text>
+                  : <Text style={[styles.btnText, { fontFamily: 'Outfit_700Bold' }]}>Sign In</Text>
                 }
               </TouchableOpacity>
 
               <View style={styles.footer}>
-                <Text style={[styles.footerText, { color: theme.textSecondary }]}>Don't have an account? </Text>
+                <Text style={[styles.footerText, { color: theme.textSecondary, fontFamily: 'Outfit_400Regular' }]}>Don't have an account? </Text>
                 <Link href="/(auth)/signup" asChild>
                   <TouchableOpacity>
-                    <Text style={[styles.footerLink, { color: theme.primary }]}>Sign Up</Text>
+                    <Text style={[styles.footerLink, { color: theme.primary, fontFamily: 'Outfit_600SemiBold' }]}>Sign Up</Text>
                   </TouchableOpacity>
                 </Link>
               </View>
             </View>
-          </View>
+          </GlassCard>
         </ScrollView>
       </KeyboardAvoidingView>
-    </LinearGradient>
+    </SceneBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  gradient: { flex: 1 },
   flex: { flex: 1 },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: 24 },
   logoWrap: { alignItems: 'center', marginBottom: 36 },
@@ -130,13 +140,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
     marginBottom: 14, borderWidth: 1,
   },
-  appName: { fontSize: 24, fontWeight: '700', letterSpacing: -0.5 },
+  appName: { letterSpacing: -0.5 },
   tagline: { fontSize: 14, marginTop: 6 },
-  card: { borderRadius: 24, overflow: 'hidden', borderWidth: 1 },
   cardInner: { padding: 24 },
-  cardTitle: { fontSize: 22, fontWeight: '700', letterSpacing: -0.5, marginBottom: 24 },
+  cardTitle: { fontSize: 22, letterSpacing: -0.5, marginBottom: 24 },
   field: { marginBottom: 16 },
-  label: { fontSize: 13, fontWeight: '500', marginBottom: 8 },
+  label: { fontSize: 13, marginBottom: 8 },
   inputRow: {
     flexDirection: 'row', alignItems: 'center',
     borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, height: 50,
@@ -148,8 +157,8 @@ const styles = StyleSheet.create({
     height: 52, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginTop: 8,
   },
   btnDisabled: { opacity: 0.6 },
-  btnText: { color: '#000', fontSize: 16, fontWeight: '700' },
+  btnText: { color: '#000', fontSize: 16 },
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 20 },
   footerText: { fontSize: 14 },
-  footerLink: { fontSize: 14, fontWeight: '600' },
+  footerLink: { fontSize: 14 },
 });
