@@ -447,6 +447,10 @@ export default function SubmitScreen() {
             setShowShareCard(false);
             router.back();
           }}
+          proofMode={mode}
+          proofPhotoUri={photoUri}
+          proofText={mode === 'text' ? textContent : null}
+          proofAudioUri={mode === 'audio' ? audioUri : null}
         />
 
         {/* Feature 5: First-Use Celebration */}
