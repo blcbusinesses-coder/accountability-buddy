@@ -13,6 +13,7 @@ import { useTheme } from '../../context/ThemeContext';
 import TaskCard from '../../components/TaskCard';
 import ProductivityBattery from '../../components/ProductivityBattery';
 import StreakBadge from '../../components/StreakBadge';
+import SocialProofDrip from '../../components/SocialProofDrip';
 import type { Database } from '../../lib/supabase';
 
 type Task = Database['public']['Tables']['tasks']['Row'];
@@ -119,14 +120,20 @@ export default function TasksScreen() {
           <Text style={[styles.title, { color: theme.textPrimary }]}>My Tasks</Text>
           <StreakBadge tasks={allTasks} />
         </View>
-        <TouchableOpacity
-          style={[styles.addBtn, { backgroundColor: theme.primary }]}
-          onPress={() => router.push('/task/create')}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="add" size={24} color="#000" />
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          {allTasks.length > 0 && <ProductivityBattery tasks={allTasks} />}
+          <TouchableOpacity
+            style={[styles.addBtn, { backgroundColor: theme.primary }]}
+            onPress={() => router.push('/task/create')}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="add" size={24} color="#000" />
+          </TouchableOpacity>
+        </View>
       </View>
+
+      {/* Feature 7: Social Proof Drip */}
+      <SocialProofDrip />
 
       {/* Stats */}
       <View style={styles.statsRow}>
@@ -136,8 +143,7 @@ export default function TasksScreen() {
         <StatCard value={stats.failed} label="Failed" color={theme.error} />
       </View>
 
-      {/* Productivity Battery */}
-      {allTasks.length > 0 && <ProductivityBattery tasks={allTasks} />}
+      {/* Feature 8: Productivity Battery (vertical, in header row handled below) */}
 
       {/* Filter pills */}
       <View style={styles.filterRow}>
@@ -184,7 +190,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: 20, paddingTop: 12, paddingBottom: 10,
   },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   title: { fontSize: 28, fontWeight: '700', letterSpacing: -0.5 },
   addBtn: {
     width: 44, height: 44, borderRadius: 13,

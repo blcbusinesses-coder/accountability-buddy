@@ -16,6 +16,11 @@ import { useTheme } from '../../context/ThemeContext';
 import {
   verifyTaskWithPhoto, verifyTaskWithText, verifyTaskWithAudio, VerificationResult,
 } from '../../lib/openai';
+import { computeStreak } from '../../components/StreakBadge';
+import ShareResultCard from '../../components/ShareResultCard';
+import FirstUseCelebration, { shouldShowFirstUseCelebration } from '../../components/FirstUseCelebration';
+import ApprovalMicroInteraction from '../../components/ApprovalMicroInteraction';
+import { checkAndSendPersonalRecord, scheduleStreakProtectionNotification } from '../../lib/notifications';
 
 type SubmissionMode = 'photo' | 'text' | 'audio';
 
@@ -44,21 +49,39 @@ export default function SubmitScreen() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<VerificationResult | null>(null);
 
+  // Feature overlays
+  const [showMicroInteraction, setShowMicroInteraction] = useState(false);
+  const [showShareCard, setShowShareCard] = useState(false);
+  const [showFirstUse, setShowFirstUse] = useState(false);
+  const [userStreak, setUserStreak] = useState(0);
+  const [completionTime] = useState(
+    new Date().toLocaleTimeString('en', { hour: 'numeric', minute: '2-digit' })
+  );
+
   const recordingRef = useRef<Audio.Recording | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const pickPhoto = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') { Alert.alert('Permission needed', 'Please allow photo library access.'); return; }
-    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8, allowsEditing: true, base64: true });
-    if (!res.canceled && res.assets[0]) { setPhotoUri(res.assets[0].uri); setPhotoBase64(res.assets[0].base64 ?? null); }
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8, allowsEditing: true, base64: true,
+    });
+    if (!res.canceled && res.assets[0]) {
+      setPhotoUri(res.assets[0].uri);
+      setPhotoBase64(res.assets[0].base64 ?? null);
+    }
   };
 
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') { Alert.alert('Permission needed', 'Please allow camera access.'); return; }
     const res = await ImagePicker.launchCameraAsync({ quality: 0.8, allowsEditing: true, base64: true });
-    if (!res.canceled && res.assets[0]) { setPhotoUri(res.assets[0].uri); setPhotoBase64(res.assets[0].base64 ?? null); }
+    if (!res.canceled && res.assets[0]) {
+      setPhotoUri(res.assets[0].uri);
+      setPhotoBase64(res.assets[0].base64 ?? null);
+    }
   };
 
   const startRecording = async () => {
@@ -88,9 +111,15 @@ export default function SubmitScreen() {
 
   const handleSubmit = async () => {
     if (!user || !taskId) return;
-    if (mode === 'photo' && (!photoUri || !photoBase64)) { Alert.alert('No photo', 'Please take or pick a photo first.'); return; }
-    if (mode === 'text' && !textContent.trim()) { Alert.alert('No text', 'Please describe how you completed the task.'); return; }
-    if (mode === 'audio' && !audioUri) { Alert.alert('No audio', 'Please record your explanation first.'); return; }
+    if (mode === 'photo' && (!photoUri || !photoBase64)) {
+      Alert.alert('No photo', 'Please take or pick a photo first.'); return;
+    }
+    if (mode === 'text' && !textContent.trim()) {
+      Alert.alert('No text', 'Please describe how you completed the task.'); return;
+    }
+    if (mode === 'audio' && !audioUri) {
+      Alert.alert('No audio', 'Please record your explanation first.'); return;
+    }
 
     setLoading(true);
     setResult(null);
@@ -111,12 +140,16 @@ export default function SubmitScreen() {
       if (mode === 'photo' && photoBase64 && photoUri) {
         const ext = photoUri.split('.').pop() ?? 'jpg';
         const fileName = `${user.id}/${taskId}/${Date.now()}.${ext}`;
-        const { data: up } = await supabase.storage.from('submissions').upload(fileName, decode(photoBase64), { contentType: `image/${ext}` });
+        const { data: up } = await supabase.storage
+          .from('submissions')
+          .upload(fileName, decode(photoBase64), { contentType: `image/${ext}` });
         if (up) contentUrl = supabase.storage.from('submissions').getPublicUrl(fileName).data.publicUrl;
       } else if (mode === 'audio' && audioUri) {
         const fileName = `${user.id}/${taskId}/${Date.now()}.m4a`;
         const base64 = await FileSystem.readAsStringAsync(audioUri, { encoding: 'base64' as any });
-        const { data: up } = await supabase.storage.from('submissions').upload(fileName, decode(base64), { contentType: 'audio/m4a' });
+        const { data: up } = await supabase.storage
+          .from('submissions')
+          .upload(fileName, decode(base64), { contentType: 'audio/m4a' });
         if (up) contentUrl = supabase.storage.from('submissions').getPublicUrl(fileName).data.publicUrl;
       }
 
@@ -128,12 +161,48 @@ export default function SubmitScreen() {
       });
 
       if (verification.verdict === 'approved') {
-        await supabase.from('tasks').update({ status: 'completed', updated_at: new Date().toISOString() }).eq('id', taskId);
+        await supabase
+          .from('tasks')
+          .update({ status: 'completed', updated_at: new Date().toISOString() })
+          .eq('id', taskId);
+
+        // Fetch all user tasks for streak calculation
+        const { data: allTasks } = await supabase
+          .from('tasks')
+          .select('*')
+          .eq('user_id', user.id);
+
+        const streak = allTasks ? computeStreak(allTasks as any) : 0;
+        setUserStreak(streak);
+
+        // Feature 4: Micro-interaction
+        setShowMicroInteraction(true);
+
+        // Feature 6: Check personal record & streak protection notifications
+        const firstName = user.user_metadata?.full_name?.split(' ')[0]
+          ?? user.email?.split('@')[0]
+          ?? 'there';
+        checkAndSendPersonalRecord(user.id, firstName);
+        if (streak > 0) {
+          scheduleStreakProtectionNotification(user.id, firstName, streak);
+        }
       }
     } catch (err: any) {
       Alert.alert('Error', err.message ?? 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleMicroInteractionComplete = async () => {
+    setShowMicroInteraction(false);
+    // Feature 5: First use celebration
+    const isFirst = await shouldShowFirstUseCelebration();
+    if (isFirst) {
+      setShowFirstUse(true);
+    } else {
+      // Feature 1: Share card
+      setShowShareCard(true);
     }
   };
 
@@ -169,7 +238,9 @@ export default function SubmitScreen() {
           {/* Task banner */}
           <View style={[styles.taskBanner, { backgroundColor: theme.primaryMuted, borderColor: theme.border }]}>
             <Ionicons name="checkmark-circle-outline" size={16} color={theme.primary} />
-            <Text style={[styles.taskBannerText, { color: theme.textPrimary }]} numberOfLines={1}>{taskTitle}</Text>
+            <Text style={[styles.taskBannerText, { color: theme.textPrimary }]} numberOfLines={1}>
+              {taskTitle}
+            </Text>
           </View>
 
           {/* Mode tabs */}
@@ -179,8 +250,13 @@ export default function SubmitScreen() {
             <ModeTab m="audio" icon="mic-outline" label="Audio" />
           </View>
 
+          {/* Feature 4: Micro-interaction overlay */}
+          {showMicroInteraction && (
+            <ApprovalMicroInteraction onComplete={handleMicroInteractionComplete} />
+          )}
+
           {/* Result card */}
-          {result && (
+          {result && !showMicroInteraction && (
             <View style={[styles.resultCard, {
               backgroundColor: result.verdict === 'approved' ? theme.successMuted : theme.errorMuted,
               borderColor: result.verdict === 'approved' ? theme.success + '55' : theme.error + '55',
@@ -191,10 +267,14 @@ export default function SubmitScreen() {
                 color={result.verdict === 'approved' ? theme.success : theme.error}
               />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.resultTitle, { color: result.verdict === 'approved' ? theme.success : theme.error }]}>
+                <Text style={[styles.resultTitle, {
+                  color: result.verdict === 'approved' ? theme.success : theme.error,
+                }]}>
                   {result.verdict === 'approved' ? 'Task Approved!' : 'Not Accepted'}
                 </Text>
-                <Text style={[styles.resultReasoning, { color: theme.textSecondary }]}>{result.reasoning}</Text>
+                <Text style={[styles.resultReasoning, { color: theme.textSecondary }]}>
+                  {result.reasoning}
+                </Text>
                 {result.verdict === 'approved' ? (
                   <TouchableOpacity
                     style={[styles.doneBtn, { backgroundColor: theme.success }]}
@@ -203,7 +283,9 @@ export default function SubmitScreen() {
                     <Text style={styles.doneBtnText}>Back to Tasks</Text>
                   </TouchableOpacity>
                 ) : (
-                  <Text style={[styles.retryHint, { color: theme.textMuted }]}>You can try again before the due date.</Text>
+                  <Text style={[styles.retryHint, { color: theme.textMuted }]}>
+                    You can try again before the due date.
+                  </Text>
                 )}
               </View>
             </View>
@@ -225,7 +307,9 @@ export default function SubmitScreen() {
               ) : (
                 <View style={[styles.photoPlaceholder, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                   <Ionicons name="camera-outline" size={44} color={theme.textMuted} />
-                  <Text style={[styles.placeholderText, { color: theme.textSecondary }]}>Take or pick a photo as proof</Text>
+                  <Text style={[styles.placeholderText, { color: theme.textSecondary }]}>
+                    Take or pick a photo as proof
+                  </Text>
                   <View style={styles.photoActions}>
                     <TouchableOpacity
                       style={[styles.photoActionBtn, { backgroundColor: theme.primaryMuted, borderColor: theme.border }]}
@@ -250,9 +334,13 @@ export default function SubmitScreen() {
           {/* TEXT */}
           {mode === 'text' && (
             <View>
-              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Describe how you completed the task</Text>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>
+                Describe how you completed the task
+              </Text>
               <TextInput
-                style={[styles.textArea, { backgroundColor: theme.surface, borderColor: theme.border, color: theme.textPrimary }]}
+                style={[styles.textArea, {
+                  backgroundColor: theme.surface, borderColor: theme.border, color: theme.textPrimary,
+                }]}
                 value={textContent}
                 onChangeText={setTextContent}
                 placeholder="I completed the task by... (be specific!)"
@@ -281,7 +369,11 @@ export default function SubmitScreen() {
                   />
                 </View>
                 <Text style={[styles.audioStatus, { color: theme.textSecondary }]}>
-                  {isRecording ? `Recording... ${fmt(recordingDuration)}` : audioUri ? `Ready (${fmt(recordingDuration)})` : 'Tap to start recording'}
+                  {isRecording
+                    ? `Recording... ${fmt(recordingDuration)}`
+                    : audioUri
+                    ? `Ready (${fmt(recordingDuration)})`
+                    : 'Tap to start recording'}
                 </Text>
                 <TouchableOpacity
                   style={[styles.audioBtn, { backgroundColor: isRecording ? theme.error : theme.primary }]}
@@ -289,7 +381,9 @@ export default function SubmitScreen() {
                   activeOpacity={0.8}
                 >
                   <Ionicons name={isRecording ? 'stop' : 'mic'} size={20} color="#000" />
-                  <Text style={styles.audioBtnText}>{isRecording ? 'Stop Recording' : 'Start Recording'}</Text>
+                  <Text style={styles.audioBtnText}>
+                    {isRecording ? 'Stop Recording' : 'Start Recording'}
+                  </Text>
                 </TouchableOpacity>
                 {audioUri && !isRecording && (
                   <TouchableOpacity onPress={() => { setAudioUri(null); setRecordingDuration(0); }}>
@@ -307,7 +401,7 @@ export default function SubmitScreen() {
           )}
 
           {/* Submit button */}
-          {(!result || result.verdict === 'rejected') && (
+          {(!result || result.verdict === 'rejected') && !showMicroInteraction && (
             <TouchableOpacity
               style={[styles.submitBtn, { backgroundColor: theme.primary }, loading && styles.disabled]}
               onPress={handleSubmit}
@@ -329,6 +423,29 @@ export default function SubmitScreen() {
           )}
         </View>
       </ScrollView>
+
+      {/* Feature 1: Share Result Card */}
+      <ShareResultCard
+        visible={showShareCard}
+        taskName={taskTitle ?? ''}
+        streak={userStreak}
+        completionTime={completionTime}
+        onClose={() => {
+          setShowShareCard(false);
+          router.back();
+        }}
+      />
+
+      {/* Feature 5: First-Use Celebration */}
+      {showFirstUse && (
+        <FirstUseCelebration
+          taskName={taskTitle ?? ''}
+          onContinue={() => {
+            setShowFirstUse(false);
+            setShowShareCard(true);
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -348,8 +465,7 @@ const styles = StyleSheet.create({
   },
   taskBannerText: { flex: 1, fontSize: 14, fontWeight: '500' },
   modeTabs: {
-    flexDirection: 'row', borderRadius: 14, padding: 4,
-    borderWidth: 1, overflow: 'hidden',
+    flexDirection: 'row', borderRadius: 14, padding: 4, borderWidth: 1, overflow: 'hidden',
   },
   modeTab: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',

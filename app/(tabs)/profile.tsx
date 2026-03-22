@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../context/ThemeContext';
 import { supabase } from '../../lib/supabase';
@@ -40,6 +40,7 @@ function getSubmissionDNA(submissions: Submission[]): string | null {
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const { theme } = useTheme();
+  const router = useRouter();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
 
@@ -98,6 +99,22 @@ export default function ProfileScreen() {
               <Text style={[styles.email, { color: theme.textPrimary }]}>{email}</Text>
               <Text style={[styles.memberSince, { color: theme.textSecondary }]}>Member since {memberSince}</Text>
             </View>
+          </GlassCard>
+        </View>
+
+        {/* Feature 9: Weekly Recap link */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>Highlights</Text>
+          <GlassCard>
+            <TouchableOpacity
+              style={[styles.statRow, { borderTopWidth: 0 }]}
+              onPress={() => router.push('/recap')}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="trophy-outline" size={18} color={theme.primary} />
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Weekly Recap</Text>
+              <Text style={[styles.statValue, { color: theme.primary }]}>View →</Text>
+            </TouchableOpacity>
           </GlassCard>
         </View>
 
